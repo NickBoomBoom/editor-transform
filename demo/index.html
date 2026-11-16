@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>editor-transform · HTML ⇄ Slate JSON</title>
+    <style>
+      :root {
+        --bg: #f6f7f9;
+        --panel: #fff;
+        --border: #e2e5ea;
+        --text: #1f2328;
+        --muted: #656d76;
+        --accent: #2563eb;
+        --warn: #b45309;
+        --danger: #b91c1c;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0; padding: 24px; background: var(--bg); color: var(--text);
+        font: 14px/1.55 -apple-system, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+      }
+      header, main, #note { max-width: 1400px; margin: 0 auto; }
+      h1 { margin: 0 0 4px; font-size: 19px; }
+      header p { margin: 0; color: var(--muted); }
+      code { background: #eef1f5; padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+
+      main {
+        margin-top: 18px; display: grid; gap: 18px;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start;
+      }
+      @media (max-width: 1080px) { main { grid-template-columns: minmax(0, 1fr); } }
+
+      .pane {
+        background: var(--panel); border: 1px solid var(--border);
+        border-radius: 10px; padding: 14px 16px 16px;
+      }
+      .pane + .pane { margin-top: 18px; }
+      .pane h2 {
+        margin: 0 0 10px; font-size: 13px; font-weight: 600;
+        letter-spacing: .02em; color: var(--muted); text-transform: uppercase;
+      }
+      .pane h2 .step {
+        display: inline-block; min-width: 18px; height: 18px; line-height: 18px;
+        margin-right: 7px; border-radius: 5px; background: var(--accent); color: #fff;
+        text-align: center; font-size: 11px;
+      }
+
+      textarea {
+        width: 100%; min-height: 220px; resize: vertical; padding: 10px 12px;
+        border: 1px solid var(--border); border-radius: 8px;
+        font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+        background: #fbfcfd; color: var(--text);
+      }
+      textarea:focus { outline: 2px solid #bfdbfe; border-color: var(--accent); }
+      textarea.invalid { border-color: var(--danger); background: #fef2f2; }
+
+      button {
+        border: 1px solid var(--border); background: #fff; color: var(--text);
+        border-radius: 7px; padding: 6px 12px; font-size: 13px; cursor: pointer;
+        margin-top: 10px;
+      }
+      button:hover { border-color: #c3cad4; background: #f9fafb; }
+      button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+      button.primary:hover { background: #1d4ed8; }
+
+      pre {
+        margin: 0; padding: 10px 12px; background: #0f172a; color: #e2e8f0;
+        border-radius: 8px; font-size: 12px; line-height: 1.5;
+        max-height: 200px; overflow: auto; white-space: pre-wrap; word-break: break-all;
+      }
+      #preview {
+        margin-top: 10px; padding: 12px 14px; border: 1px dashed var(--border);
+        border-radius: 8px; background: #fcfdfe; min-height: 120px; max-height: 460px; overflow: auto;
+      }
+      #preview:empty::before { content: "转回的 HTML 会渲染在这里"; color: #9aa3af; }
+
+      #note { margin-top: 12px; font-size: 12px; color: var(--muted); }
+      #note.warn { color: var(--warn); white-space: pre-wrap; }
+      #note.error { color: var(--danger); white-space: pre-wrap; }
+
+      /* editor-v3 自定义元素的占位显示（不引入他们的渲染层，用 CSS 示意） */
+      #preview answer-box {
+        display: block; min-height: 34px; border: 1px dashed #e13c39; border-radius: 6px;
+      }
+      #preview answer-box::before { content: "答案框 #" attr(index); color: #e13c39; font-size: 12px; }
+      #preview proxy-browser {
+        display: block; padding: 10px; background: #f3f4f6; border-radius: 6px;
+        font-size: 12px; color: #6b7280;
+      }
+      #preview proxy-browser::before { content: "代理浏览器 " attr(object-id); }
+      #preview cp-audio-player {
+        display: block; padding: 8px 10px; background: #f3f4f6; border-radius: 6px;
+        font-size: 12px; color: #6b7280;
+      }
+      #preview cp-audio-player::before { content: "音频 " attr(src); }
+      #preview [data-w-e-type="shadow-dom"] {
+        display: block; padding: 8px 10px; border-left: 3px solid #6366f1;
+        background: #f5f3ff; font-size: 12px; color: #4f46e5;
+      }
+      #preview [data-w-e-type="shadow-dom"]::before {
+        content: "影子节点（真实渲染由前端 shadow DOM 完成）"; display: block;
+      }
+      #preview video { max-width: 100%; background: #111827; }
+      #preview img { max-width: 100%; }
+      #preview table { border-collapse: collapse; margin: 8px 0; }
+      #preview th, #preview td { border: 1px solid var(--border); padding: 5px 9px; text-align: left; }
+      #preview blockquote {
+        margin: 8px 0; padding: 2px 0 2px 12px; border-left: 3px solid #d1d5db; color: #4b5563;
+      }
+
+      /* textParse* 的字体/字号/底纹对齐 editor-v3/config.ts */
+      #preview [data-w-e-type="textParseTaskTitle"] { color: #000; font: bold 22px/1.5 宋体; }
+      #preview [data-w-e-type="textParseTaskContent"] { color: #000; font: normal 19px/1.5 宋体; }
+      #preview [data-w-e-type="textParsePrompt"] { color: #e13c39; font: bold 22px/1.5 宋体; }
+      #preview [data-w-e-type="textParsePromptElement"] { color: #000; font: bold 19px/1.5 宋体; }
+      #preview [data-w-e-type="textParsePromptElementContent"] { color: #000; font: normal 19px/1.5 宋体; background: #d9d9d9; }
+      #preview [data-w-e-type="textParseQuestionKeywordTitle"] { color: #000; font: bold 19px/1.5 宋体; }
+      #preview [data-w-e-type="textParseQuestionKeywordContent"] { color: #000; font: normal 19px/1.5 宋体; background: #d9d9d9; }
+      #preview [data-w-e-type="textParseSubmitTaskNotice"] { color: #e13c39; font: bold 22px/1.5 宋体; }
+      #preview [data-w-e-type="textParseWorkOrderTitle"] { color: #000; font: bold 19px/1.5 宋体; }
+      #preview [data-w-e-type="textParseWorkOrderContent"] { color: #000; font: normal 19px/1.5 宋体; background: #ffec3d; }
+      #preview [data-w-e-type="textParseSubmitContent"] { color: #000; font: normal 19px/1.5 宋体; background: #ffec3d; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>editor-transform · HTML ⇄ Slate JSON</h1>
+      <p>
+        贴一段 editor-v3 的 <code>getHtml()</code> 输出 → 转成 Slate JSON → 手动改 JSON →
+        转回 HTML 并渲染。解析和还原都走 wangEditor 自己的规则。
+        第 1 步默认加载的是全量样张（16 个 <code>textParse*</code>、6 个自定义节点和全部内置样式），
+        媒体地址是占位的 <code>/media/*</code>，图片/视频不显示属于正常。
+      </p>
+    </header>
+
+    <main>
+      <div>
+        <section class="pane">
+          <h2><span class="step">1</span>HTML</h2>
+          <textarea id="input-html" spellcheck="false"></textarea>
+          <button class="primary" id="btn-to-json">转为 JSON →</button>
+        </section>
+
+        <section class="pane">
+          <h2><span class="step">2</span>Slate JSON（可以手动修改）</h2>
+          <textarea id="slate-io" spellcheck="false" placeholder="点上面的「转为 JSON」，或直接粘一段 Slate JSON"></textarea>
+          <button class="primary" id="btn-to-html">转为 HTML →</button>
+        </section>
+      </div>
+
+      <section class="pane">
+        <h2><span class="step">3</span>渲染结果</h2>
+        <pre id="html-out">（尚未生成）</pre>
+        <div id="preview"></div>
+      </section>
+    </main>
+
+    <p id="note"></p>
+
+    <!-- 全量样张：test/fixtures/editor-v3-full.json 经 slateToHtml 转回， -->
+    <!-- 放在 text/plain 里承载，浏览器不会执行，也不用转义 HTML。 -->
+    <script type="text/plain" id="sample-html">
+  <h1>编辑器全量节点样张</h1>
+  <p>本文件覆盖 editor-v3 注册的 16 个 textParse 节点、6 个自定义节点，以及内置的块级与行内样式。</p>
+  <div data-w-e-type="textParseTaskTitle" style="line-height: 1.5;"><span style="color: rgb(0, 0, 0); font-size: 22px; font-family: 宋体;"><strong>任务标题</strong></span></div>
+  <div data-w-e-type="textParseTaskContent" style="line-height: 1.5;"><span style="color: rgb(0, 0, 0); font-size: 19px; font-family: 宋体;">任务内容</span></div>
+  <div data-w-e-type="textParsePrompt" style="line-height: 1.5;"><span style="color: rgb(225, 60, 57); font-size: 22px; font-family: 宋体;"><strong>题干</strong></span></div>
+  <div data-w-e-type="textParsePromptElement" style="line-height: 1.5;"><span style="color: rgb(0, 0, 0); font-size: 19px; font-family: 宋体;"><strong>题干要点</strong></span></div>
+  <div data-w-e-type="textParsePromptElementContent" style="line-height: 1.5;"><span style="color: rgb(0, 0, 0); background-color: rgb(217, 217, 217); font-size: 19px; font-family: 宋体;">题干要点内容</span></div>
+  <div data-w-e-type="textParseQuestionKeywordTitle" style="line-height: 1.5;"><span style="color: rgb(0, 0, 0); font-size: 19px; font-family: 宋体;"><strong>问题关键词标题</strong></span></div>
+  <div data-w-e-type="textParseQuestionKeywordContent" style="line-height: 1.5;"><span style="color: rgb(0, 0, 0); background-color: rgb(217, 217, 217); font-size: 19px; font-family: 宋体;">问题关键词内容</span></div>
+  <div data-w-e-type="textParseSubmitTaskNotice" style="line-height: 1.5;"><span style="color: rgb(225, 60, 57); font-size: 22px; font-family: 宋体;"><strong>提交任务须知</strong></span></div>
+  <div data-w-e-type="textParseWorkOrderTitle" style="line-height: 1.5;"><span style="color: rgb(0, 0, 0); font-size: 19px; font-family: 宋体;"><strong>工单标题</strong></span></div>
+  <div data-w-e-type="textParseWorkOrderContent" style="line-height: 1.5;"><span style="color: rgb(0, 0, 0); background-color: rgb(255, 236, 61); font-size: 19px; font-family: 宋体;">工单内容</span></div>
+  <div data-w-e-type="textParseSubmitContent" style="line-height: 1.5;"><span style="color: rgb(0, 0, 0); background-color: rgb(255, 236, 61); font-size: 19px; font-family: 宋体;">提交内容</span></div>
+  <div data-w-e-type="textParseTaskDescription" style="line-height: 1.5;">任务说明</div>
+  <div data-w-e-type="textParseContent" style="line-height: 1.5;">正文</div>
+  <div data-w-e-type="textParseQuestionKeyword" style="line-height: 1.5;">问题关键词</div>
+  <div data-w-e-type="textParsePromptContent" style="line-height: 1.5;">题干内容</div>
+  <div data-w-e-type="textParseEmphasis" style="line-height: 1.5;">强调</div>
+  <blockquote>引用：节点形状由 editor-v3 的 parse-elem-html 与 elem-to-html 决定。</blockquote>
+  <pre><code class="language-html">&lt;div data-w-e-type="textParseTaskTitle"&gt;任务标题&lt;/div&gt;</code></pre>
+  <hr>
+  <h2>二级标题</h2>
+  <h3>三级标题</h3>
+  <h4>四级标题</h4>
+  <h5>五级标题</h5>
+  <h6>六级标题</h6>
+  <p><strong>粗体</strong> / <em>斜体</em> / <u>下划线</u> / <s>删除线</s> / <code>行内代码</code> / <sub>下标</sub> / <sup>上标</sup> / <span style="color: rgb(225, 60, 57); background-color: rgb(255, 236, 61);">颜色字</span> / <span style="font-size: 19px; font-family: 宋体;">字体字号</span></p>
+  <p style="text-indent: 2em; text-align: right; line-height: 1.5;">右对齐、首行缩进、1.5 倍行距</p>
+  <ul><li>无序 1</li><li>无序 2<ul><li>嵌套项</li></ul></li></ul>
+  <ol><li>有序 1</li><li>有序 2</li></ol>
+  <div data-w-e-type="todo"><input type="checkbox" disabled="">待办 1</div>
+  <div data-w-e-type="todo"><input type="checkbox" disabled="" checked="">待办 2</div>
+  <p>访问<a href="https://www.baidu.com" target="_blank">外链</a>了解更多。</p>
+  <p style="text-align: center;"><a href="demo.gif" target="_blank"><img src="/media/demo.gif" alt="demo.gif" data-href="demo.gif" width="" height="" style="width: 223px;height: 298px;"></a></p>
+  <p style="text-align: center;"><img src="/media/logo.png" alt="logo.png" data-href="" width="" height="" style="width: 30%;"></p>
+  <div data-w-e-type="audio"><cp-audio-player src="/media/sample-6s.mp3" style="margin:0 auto;"></cp-audio-player></div>
+  <div data-w-e-type="video" data-w-e-is-void="" style="text-align: center;">
+<video poster="" controls="true" width="auto" height="auto" style=""><source src="/media/sample.mp4" type="video/mp4"></video>
+</div>
+  <answer-box index="2"></answer-box>
+  <div data-w-e-type="proxyBrowser" style="margin:8px 0;"><proxy-browser object-id="editor/file/demo.xlsx"></proxy-browser></div>
+  <div data-w-e-type="shadow-dom"><span class="shadow-pill" style="color: rgb(225, 60, 57); font-weight: bold">影子节点内容</span><b>加粗影子</b></div>
+  <table style="width: 180px;table-layout: fixed;height:auto"><colgroup contenteditable="false"><col width="90"><col width="90"></colgroup><tbody><tr><th colspan="1" rowspan="1" width="auto"><p>列 A</p></th><th colspan="1" rowspan="1" width="auto"><p>列 B</p></th></tr><tr><td colspan="1" rowspan="1" width="auto" style="border-style: solid;"><p>1</p></td><td colspan="1" rowspan="1" width="auto" style="border-style: solid;"><p>2</p></td></tr></tbody></table>
+  <p><br></p>
+    </script>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "@wangeditor-next/editor": "/node_modules/@wangeditor-next/editor/dist/index.mjs",
+          "editor-transform": "/dist/browser.js"
+        }
+      }
+    </script>
+
+    <script type="module">
+      import { htmlToSlate, registerModule, slateToHtml } from 'editor-transform'
+      // 由 scripts/sync-editor-v3.ts 生成：editor-v3 的解析/序列化/插件规则。
+      // 必须注册，否则 audio / answer-box / shadow-dom / textParse* 会静默退化成 paragraph。
+      import { editorV3NodeModules } from '/demo/vendor/editor-v3-modules.js'
+
+      for (const mod of editorV3NodeModules) registerModule(mod)
+
+      // editor-v3 的 shadow-dom 序列化会把 attrs.style 写成 [object Object]，属性之间
+      // 也没有空格。按 README「修上游 elemToHtml 的缺陷」注册同 type 的规则覆盖它。
+      registerModule({
+        elemsToHtml: [
+          {
+            type: 'shadow-dom',
+            elemToHtml(elem) {
+              const doms = Array.isArray(elem.doms) ? elem.doms : []
+              const inner = doms
+                .map((dom) => {
+                  const attrs = Object.entries(dom.attrs ?? {})
+                    .map(([key, raw]) => {
+                      const value = raw && typeof raw === 'object'
+                        ? Object.entries(raw).map(([prop, v]) => `${prop}: ${v}`).join('; ')
+                        : String(raw)
+                      return ` ${key}="${value}"`
+                    })
+                    .join('')
+                  return `<${dom.tag}${attrs}>${dom.html}</${dom.tag}>`
+                })
+                .join('')
+              return `<div data-w-e-type="shadow-dom">${inner}</div>`
+            },
+          },
+        ],
+      })
+
+      const $ = (id) => document.getElementById(id)
+      const inputHtml = $('input-html')
+      const slateIo = $('slate-io')
+      const note = $('note')
+
+      function setNote(text, kind = '') {
+        note.textContent = text
+        note.className = kind
+      }
+
+      // 解析阶段的警告留着，第 3 步渲染完不要把它冲掉。
+      let warningText = ''
+
+      // 全量样张：test/fixtures/editor-v3-full.json 经 slateToHtml 转回的 HTML，
+      // 覆盖 16 个 textParse*、6 个自定义节点，以及 header / 表格 / 列表 / 引用 /
+      // 代码块和全部行内标记。HTML 放在页面里的 <script type="text/plain"> 中，
+      // 省得在 JS 字符串里转义；媒体地址是占位的 /media/*，demo 里没有这些文件。
+      inputHtml.value = $('sample-html').textContent.trim()
+
+      function render(html) {
+        $('html-out').textContent = html || '（空文档）'
+        $('preview').innerHTML = html
+      }
+
+      /* 1 → 2：HTML 转 Slate JSON */
+      $('btn-to-json').addEventListener('click', () => {
+        const warnings = []
+        try {
+          const value = htmlToSlate(inputHtml.value, { onWarning: (w) => warnings.push(w) })
+          slateIo.value = JSON.stringify(value, null, 2)
+          slateIo.classList.remove('invalid')
+          warningText = warnings.map((w) => w.message).join('\n')
+          setNote(warningText, warningText ? 'warn' : '')
+        } catch (error) {
+          slateIo.classList.add('invalid')
+          warningText = ''
+          render('')
+          setNote(`解析失败：${error.message}`, 'error')
+        }
+      })
+
+      /* 2 → 3：Slate JSON 转 HTML 并渲染 */
+      $('btn-to-html').addEventListener('click', () => {
+        let value
+        try {
+          value = JSON.parse(slateIo.value)
+        } catch (error) {
+          slateIo.classList.add('invalid')
+          render('')
+          setNote(`JSON 格式错误：${error.message}`, 'error')
+          return
+        }
+        slateIo.classList.remove('invalid')
+        try {
+          render(slateToHtml(value))
+          setNote(warningText, warningText ? 'warn' : '')
+        } catch (error) {
+          render('')
+          setNote(`转换失败：${error.message}`, 'error')
+        }
+      })
+
+      // 首屏直接跑一遍，省得先点按钮
+      $('btn-to-json').click()
+      $('btn-to-html').click()
+    </script>
+  </body>
+</html>

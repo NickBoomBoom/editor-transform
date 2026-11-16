@@ -1,0 +1,57 @@
+{
+  "name": "editor-transform",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "wangEditor-next 的 getHtml() ⇄ Slate JSON 转换 SDK，供后端解析与回写",
+  "main": "./dist/node.cjs",
+  "module": "./dist/node.js",
+  "types": "./dist/types/node.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/node.d.ts",
+      "import": "./dist/node.js",
+      "require": "./dist/node.cjs"
+    },
+    "./browser": {
+      "types": "./dist/types/browser.d.ts",
+      "import": "./dist/browser.js"
+    },
+    "./editor-v3-modules": {
+      "types": "./dist/editor-v3-modules.d.mts",
+      "import": "./dist/editor-v3-modules.mjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup && tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "node --expose-gc --test \"test/**/*.test.ts\"",
+    "sync:editor-v3": "node scripts/sync-editor-v3.ts",
+    "demo": "npm run build && npm run sync:editor-v3 && node scripts/serve.mjs",
+    "demo:backend": "npm run build && npm run sync:editor-v3 && node scripts/demo-backend.ts",
+    "check": "node --expose-gc scripts/check-engine.ts",
+    "serve": "node scripts/serve.mjs"
+  },
+  "dependencies": {
+    "@wangeditor-next/editor": "6.6.2",
+    "global-jsdom": "^27.0.0",
+    "jsdom": "^27.0.0"
+  },
+  "devDependencies": {
+    "@types/jsdom": "^30.0.0",
+    "@types/node": "^26.6.6",
+    "esbuild": "^0.28.2",
+    "tsup": "^9.0.0",
+    "typescript": "^7.0.2"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  }
+}

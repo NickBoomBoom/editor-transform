@@ -1,0 +1,660 @@
+[
+  {
+    "type": "header1",
+    "children": [
+      {
+        "text": "编辑器全量节点样张"
+      }
+    ]
+  },
+  {
+    "type": "paragraph",
+    "children": [
+      {
+        "text": "本文件覆盖 editor-v3 注册的 16 个 textParse 节点、6 个自定义节点，以及内置的块级与行内样式。"
+      }
+    ]
+  },
+  {
+    "type": "textParseTaskTitle",
+    "children": [
+      {
+        "color": "rgb(0, 0, 0)",
+        "fontSize": "22px",
+        "fontFamily": "宋体",
+        "text": "任务标题",
+        "bold": true
+      }
+    ],
+    "lineHeight": "1.5"
+  },
+  {
+    "type": "textParseTaskContent",
+    "children": [
+      {
+        "text": "任务内容",
+        "color": "rgb(0, 0, 0)",
+        "fontSize": "19px",
+        "fontFamily": "宋体"
+      }
+    ],
+    "lineHeight": "1.5"
+  },
+  {
+    "type": "textParsePrompt",
+    "children": [
+      {
+        "color": "rgb(225, 60, 57)",
+        "fontSize": "22px",
+        "fontFamily": "宋体",
+        "text": "题干",
+        "bold": true
+      }
+    ],
+    "lineHeight": "1.5"
+  },
+  {
+    "type": "textParsePromptElement",
+    "children": [
+      {
+        "color": "rgb(0, 0, 0)",
+        "fontSize": "19px",
+        "fontFamily": "宋体",
+        "text": "题干要点",
+        "bold": true
+      }
+    ],
+    "lineHeight": "1.5"
+  },
+  {
+    "type": "textParsePromptElementContent",
+    "children": [
+      {
+        "text": "题干要点内容",
+        "color": "rgb(0, 0, 0)",
+        "bgColor": "rgb(217, 217, 217)",
+        "fontSize": "19px",
+        "fontFamily": "宋体"
+      }
+    ],
+    "lineHeight": "1.5"
+  },
+  {
+    "type": "textParseQuestionKeywordTitle",
+    "children": [
+      {
+        "color": "rgb(0, 0, 0)",
+        "fontSize": "19px",
+        "fontFamily": "宋体",
+        "text": "问题关键词标题",
+        "bold": true
+      }
+    ],
+    "lineHeight": "1.5"
+  },
+  {
+    "type": "textParseQuestionKeywordContent",
+    "children": [
+      {
+        "text": "问题关键词内容",
+        "color": "rgb(0, 0, 0)",
+        "bgColor": "rgb(217, 217, 217)",
+        "fontSize": "19px",
+        "fontFamily": "宋体"
+      }
+    ],
+    "lineHeight": "1.5"
+  },
+  {
+    "type": "textParseSubmitTaskNotice",
+    "children": [
+      {
+        "color": "rgb(225, 60, 57)",
+        "fontSize": "22px",
+        "fontFamily": "宋体",
+        "text": "提交任务须知",
+        "bold": true
+      }
+    ],
+    "lineHeight": "1.5"
+  },
+  {
+    "type": "textParseWorkOrderTitle",
+    "children": [
+      {
+        "color": "rgb(0, 0, 0)",
+        "fontSize": "19px",
+        "fontFamily": "宋体",
+        "text": "工单标题",
+        "bold": true
+      }
+    ],
+    "lineHeight": "1.5"
+  },
+  {
+    "type": "textParseWorkOrderContent",
+    "children": [
+      {
+        "text": "工单内容",
+        "color": "rgb(0, 0, 0)",
+        "bgColor": "rgb(255, 236, 61)",
+        "fontSize": "19px",
+        "fontFamily": "宋体"
+      }
+    ],
+    "lineHeight": "1.5"
+  },
+  {
+    "type": "textParseSubmitContent",
+    "children": [
+      {
+        "text": "提交内容",
+        "color": "rgb(0, 0, 0)",
+        "bgColor": "rgb(255, 236, 61)",
+        "fontSize": "19px",
+        "fontFamily": "宋体"
+      }
+    ],
+    "lineHeight": "1.5"
+  },
+  {
+    "type": "textParseTaskDescription",
+    "children": [
+      {
+        "text": "任务说明"
+      }
+    ],
+    "lineHeight": "1.5"
+  },
+  {
+    "type": "textParseContent",
+    "children": [
+      {
+        "text": "正文"
+      }
+    ],
+    "lineHeight": "1.5"
+  },
+  {
+    "type": "textParseQuestionKeyword",
+    "children": [
+      {
+        "text": "问题关键词"
+      }
+    ],
+    "lineHeight": "1.5"
+  },
+  {
+    "type": "textParsePromptContent",
+    "children": [
+      {
+        "text": "题干内容"
+      }
+    ],
+    "lineHeight": "1.5"
+  },
+  {
+    "type": "textParseEmphasis",
+    "children": [
+      {
+        "text": "强调"
+      }
+    ],
+    "lineHeight": "1.5"
+  },
+  {
+    "type": "blockquote",
+    "children": [
+      {
+        "text": "引用：节点形状由 editor-v3 的 parse-elem-html 与 elem-to-html 决定。"
+      }
+    ]
+  },
+  {
+    "type": "pre",
+    "children": [
+      {
+        "type": "code",
+        "language": "html",
+        "children": [
+          {
+            "text": "<div data-w-e-type=\"textParseTaskTitle\">任务标题</div>"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "divider",
+    "children": [
+      {
+        "text": ""
+      }
+    ]
+  },
+  {
+    "type": "header2",
+    "children": [
+      {
+        "text": "二级标题"
+      }
+    ]
+  },
+  {
+    "type": "header3",
+    "children": [
+      {
+        "text": "三级标题"
+      }
+    ]
+  },
+  {
+    "type": "header4",
+    "children": [
+      {
+        "text": "四级标题"
+      }
+    ]
+  },
+  {
+    "type": "header5",
+    "children": [
+      {
+        "text": "五级标题"
+      }
+    ]
+  },
+  {
+    "type": "header6",
+    "children": [
+      {
+        "text": "六级标题"
+      }
+    ]
+  },
+  {
+    "type": "paragraph",
+    "children": [
+      {
+        "text": "粗体",
+        "bold": true
+      },
+      {
+        "text": " / "
+      },
+      {
+        "text": "斜体",
+        "italic": true
+      },
+      {
+        "text": " / "
+      },
+      {
+        "text": "下划线",
+        "underline": true
+      },
+      {
+        "text": " / "
+      },
+      {
+        "text": "删除线",
+        "through": true
+      },
+      {
+        "text": " / "
+      },
+      {
+        "text": "行内代码",
+        "code": true
+      },
+      {
+        "text": " / "
+      },
+      {
+        "text": "下标",
+        "sub": true
+      },
+      {
+        "text": " / "
+      },
+      {
+        "text": "上标",
+        "sup": true
+      },
+      {
+        "text": " / "
+      },
+      {
+        "text": "颜色字",
+        "color": "rgb(225, 60, 57)",
+        "bgColor": "rgb(255, 236, 61)"
+      },
+      {
+        "text": " / "
+      },
+      {
+        "text": "字体字号",
+        "fontSize": "19px",
+        "fontFamily": "宋体"
+      }
+    ]
+  },
+  {
+    "type": "paragraph",
+    "children": [
+      {
+        "text": "右对齐、首行缩进、1.5 倍行距"
+      }
+    ],
+    "indent": "2em",
+    "textAlign": "right",
+    "lineHeight": "1.5"
+  },
+  {
+    "type": "list-item",
+    "ordered": false,
+    "level": 0,
+    "children": [
+      {
+        "text": "无序 1"
+      }
+    ]
+  },
+  {
+    "type": "list-item",
+    "ordered": false,
+    "level": 0,
+    "children": [
+      {
+        "text": "无序 2"
+      }
+    ]
+  },
+  {
+    "type": "list-item",
+    "ordered": false,
+    "level": 1,
+    "children": [
+      {
+        "text": "嵌套项"
+      }
+    ]
+  },
+  {
+    "type": "list-item",
+    "ordered": true,
+    "level": 0,
+    "children": [
+      {
+        "text": "有序 1"
+      }
+    ]
+  },
+  {
+    "type": "list-item",
+    "ordered": true,
+    "level": 0,
+    "children": [
+      {
+        "text": "有序 2"
+      }
+    ]
+  },
+  {
+    "type": "todo",
+    "checked": false,
+    "children": [
+      {
+        "text": "待办 1"
+      }
+    ]
+  },
+  {
+    "type": "todo",
+    "checked": true,
+    "children": [
+      {
+        "text": "待办 2"
+      }
+    ]
+  },
+  {
+    "type": "paragraph",
+    "children": [
+      {
+        "text": "访问"
+      },
+      {
+        "type": "link",
+        "url": "https://www.baidu.com",
+        "target": "_blank",
+        "children": [
+          {
+            "text": "外链"
+          }
+        ]
+      },
+      {
+        "text": "了解更多。"
+      }
+    ]
+  },
+  {
+    "type": "paragraph",
+    "children": [
+      {
+        "type": "image",
+        "src": "/media/demo.gif",
+        "alt": "demo.gif",
+        "href": "demo.gif",
+        "style": {
+          "width": "223px",
+          "height": "298px"
+        },
+        "width": "",
+        "height": "",
+        "children": [
+          {
+            "text": ""
+          }
+        ]
+      }
+    ],
+    "textAlign": "center"
+  },
+  {
+    "type": "paragraph",
+    "children": [
+      {
+        "type": "image",
+        "src": "/media/logo.png",
+        "alt": "logo.png",
+        "href": "",
+        "style": {
+          "width": "30%",
+          "height": ""
+        },
+        "width": "",
+        "height": "",
+        "children": [
+          {
+            "text": ""
+          }
+        ]
+      }
+    ],
+    "textAlign": "center"
+  },
+  {
+    "type": "audio",
+    "src": "/media/sample-6s.mp3",
+    "children": [
+      {
+        "text": ""
+      }
+    ]
+  },
+  {
+    "type": "video",
+    "src": "/media/sample.mp4",
+    "poster": "",
+    "width": "auto",
+    "height": "auto",
+    "style": {},
+    "children": [
+      {
+        "text": ""
+      }
+    ],
+    "align": "center"
+  },
+  {
+    "type": "insert-answer-box",
+    "index": 2,
+    "children": [
+      {
+        "text": ""
+      }
+    ]
+  },
+  {
+    "type": "proxyBrowser",
+    "objectId": "editor/file/demo.xlsx",
+    "children": [
+      {
+        "text": ""
+      }
+    ]
+  },
+  {
+    "type": "shadow-dom",
+    "doms": [
+      {
+        "tag": "span",
+        "attrs": {
+          "class": "shadow-pill",
+          "style": {
+            "color": "rgb(225, 60, 57)",
+            "font-weight": "bold"
+          }
+        },
+        "html": "影子节点内容"
+      },
+      {
+        "tag": "b",
+        "attrs": {},
+        "html": "加粗影子"
+      }
+    ],
+    "children": [
+      {
+        "text": ""
+      }
+    ]
+  },
+  {
+    "type": "table",
+    "width": "auto",
+    "height": 0,
+    "children": [
+      {
+        "type": "table-row",
+        "children": [
+          {
+            "type": "table-cell",
+            "isHeader": true,
+            "colSpan": 1,
+            "rowSpan": 1,
+            "width": "auto",
+            "children": [
+              {
+                "type": "paragraph",
+                "children": [
+                  {
+                    "text": "列 A"
+                  }
+                ]
+              }
+            ],
+            "hidden": false
+          },
+          {
+            "type": "table-cell",
+            "isHeader": true,
+            "colSpan": 1,
+            "rowSpan": 1,
+            "width": "auto",
+            "children": [
+              {
+                "type": "paragraph",
+                "children": [
+                  {
+                    "text": "列 B"
+                  }
+                ]
+              }
+            ],
+            "hidden": false
+          }
+        ]
+      },
+      {
+        "type": "table-row",
+        "children": [
+          {
+            "type": "table-cell",
+            "isHeader": false,
+            "colSpan": 1,
+            "rowSpan": 1,
+            "width": "auto",
+            "children": [
+              {
+                "type": "paragraph",
+                "children": [
+                  {
+                    "text": "1"
+                  }
+                ]
+              }
+            ],
+            "hidden": false,
+            "borderWidth": "1px",
+            "borderStyle": "solid"
+          },
+          {
+            "type": "table-cell",
+            "isHeader": false,
+            "colSpan": 1,
+            "rowSpan": 1,
+            "width": "auto",
+            "children": [
+              {
+                "type": "paragraph",
+                "children": [
+                  {
+                    "text": "2"
+                  }
+                ]
+              }
+            ],
+            "hidden": false,
+            "borderWidth": "1px",
+            "borderStyle": "solid"
+          }
+        ]
+      }
+    ],
+    "columnWidths": [
+      90,
+      90
+    ]
+  },
+  {
+    "type": "paragraph",
+    "children": [
+      {
+        "text": ""
+      }
+    ]
+  }
+]

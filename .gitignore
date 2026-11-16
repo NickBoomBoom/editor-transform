@@ -1,0 +1,10 @@
+node_modules/
+dist/
+*.tsbuildinfo
+
+# 本地缓存（见 README「开发」一节：npm / pnpm 都改用仓库内缓存，避免污染 HOME）
+.npm-cache/
+.pnpm-store/
+
+.DS_Store
+*.log

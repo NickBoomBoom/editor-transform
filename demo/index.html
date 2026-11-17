@@ -20,34 +20,46 @@
         margin: 0; padding: 24px; background: var(--bg); color: var(--text);
         font: 14px/1.55 -apple-system, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
       }
-      header, main, #note { max-width: 1400px; margin: 0 auto; }
+      header, main { max-width: 1400px; margin: 0 auto; }
       h1 { margin: 0 0 4px; font-size: 19px; }
       header p { margin: 0; color: var(--muted); }
       code { background: #eef1f5; padding: 1px 5px; border-radius: 4px; font-size: 12px; }
 
-      main {
-        margin-top: 18px; display: grid; gap: 18px;
+      main { margin-top: 18px; display: grid; gap: 22px; }
+
+      /* 一个测试 = 一张卡片，卡片内部再分「输入 / 输出」两栏 */
+      .test {
+        background: var(--panel); border: 1px solid var(--border);
+        border-radius: 12px; padding: 16px 18px 18px;
+      }
+      .test > h2 {
+        margin: 0 0 14px; font-size: 15px; display: flex; align-items: baseline; gap: 9px;
+        flex-wrap: wrap;
+      }
+      .test > h2 .badge {
+        display: inline-block; padding: 2px 9px; border-radius: 999px;
+        background: var(--accent); color: #fff; font-size: 11px; font-weight: 600;
+        letter-spacing: .04em;
+      }
+      .test > h2 .arrow { color: var(--muted); font-weight: 600; }
+      .test > h2 small { color: var(--muted); font-weight: 400; font-size: 12px; }
+
+      .grid {
+        display: grid; gap: 16px;
         grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start;
       }
-      @media (max-width: 1080px) { main { grid-template-columns: minmax(0, 1fr); } }
+      @media (max-width: 1080px) { .grid { grid-template-columns: minmax(0, 1fr); } }
 
-      .pane {
-        background: var(--panel); border: 1px solid var(--border);
-        border-radius: 10px; padding: 14px 16px 16px;
+      .pane { border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px 14px; }
+      .pane h3 {
+        margin: 0 0 9px; font-size: 12px; font-weight: 600; color: var(--muted);
+        letter-spacing: .02em;
       }
-      .pane + .pane { margin-top: 18px; }
-      .pane h2 {
-        margin: 0 0 10px; font-size: 13px; font-weight: 600;
-        letter-spacing: .02em; color: var(--muted); text-transform: uppercase;
-      }
-      .pane h2 .step {
-        display: inline-block; min-width: 18px; height: 18px; line-height: 18px;
-        margin-right: 7px; border-radius: 5px; background: var(--accent); color: #fff;
-        text-align: center; font-size: 11px;
-      }
+      .pane h3 + .pane-part { margin-top: 0; }
+      .pane-part { margin-top: 16px; }
 
       textarea {
-        width: 100%; min-height: 220px; resize: vertical; padding: 10px 12px;
+        width: 100%; min-height: 260px; resize: vertical; padding: 10px 12px;
         border: 1px solid var(--border); border-radius: 8px;
         font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
         background: #fbfcfd; color: var(--text);
@@ -55,10 +67,10 @@
       textarea:focus { outline: 2px solid #bfdbfe; border-color: var(--accent); }
       textarea.invalid { border-color: var(--danger); background: #fef2f2; }
 
+      .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
       button {
         border: 1px solid var(--border); background: #fff; color: var(--text);
         border-radius: 7px; padding: 6px 12px; font-size: 13px; cursor: pointer;
-        margin-top: 10px;
       }
       button:hover { border-color: #c3cad4; background: #f9fafb; }
       button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
@@ -67,98 +79,146 @@
       pre {
         margin: 0; padding: 10px 12px; background: #0f172a; color: #e2e8f0;
         border-radius: 8px; font-size: 12px; line-height: 1.5;
-        max-height: 200px; overflow: auto; white-space: pre-wrap; word-break: break-all;
+        max-height: 320px; overflow: auto; white-space: pre-wrap; word-break: break-all;
       }
-      #preview {
-        margin-top: 10px; padding: 12px 14px; border: 1px dashed var(--border);
-        border-radius: 8px; background: #fcfdfe; min-height: 120px; max-height: 460px; overflow: auto;
-      }
-      #preview:empty::before { content: "转回的 HTML 会渲染在这里"; color: #9aa3af; }
+      pre.pending { color: #94a3b8; }
 
-      #note { margin-top: 12px; font-size: 12px; color: var(--muted); }
-      #note.warn { color: var(--warn); white-space: pre-wrap; }
-      #note.error { color: var(--danger); white-space: pre-wrap; }
+      .preview {
+        margin-top: 0; padding: 12px 14px; border: 1px dashed var(--border);
+        border-radius: 8px; background: #fcfdfe; min-height: 110px; max-height: 420px; overflow: auto;
+      }
+      .preview:empty::before { content: "渲染结果会出现在这里"; color: #9aa3af; }
+
+      .note { margin: 12px 0 0; font-size: 12px; color: var(--muted); white-space: pre-wrap; }
+      .note.warn { color: var(--warn); }
+      .note.error { color: var(--danger); }
 
       /* editor-v3 自定义元素的占位显示（不引入他们的渲染层，用 CSS 示意） */
-      #preview answer-box {
+      .preview answer-box {
         display: block; min-height: 34px; border: 1px dashed #e13c39; border-radius: 6px;
       }
-      #preview answer-box::before { content: "答案框 #" attr(index); color: #e13c39; font-size: 12px; }
-      #preview proxy-browser {
+      .preview answer-box::before { content: "答案框 #" attr(index); color: #e13c39; font-size: 12px; }
+      .preview proxy-browser {
         display: block; padding: 10px; background: #f3f4f6; border-radius: 6px;
         font-size: 12px; color: #6b7280;
       }
-      #preview proxy-browser::before { content: "代理浏览器 " attr(object-id); }
-      #preview cp-audio-player {
+      .preview proxy-browser::before { content: "代理浏览器 " attr(object-id); }
+      .preview cp-audio-player {
         display: block; padding: 8px 10px; background: #f3f4f6; border-radius: 6px;
         font-size: 12px; color: #6b7280;
       }
-      #preview cp-audio-player::before { content: "音频 " attr(src); }
-      #preview [data-w-e-type="shadow-dom"] {
+      .preview cp-audio-player::before { content: "音频 " attr(src); }
+      .preview [data-w-e-type="shadow-dom"] {
         display: block; padding: 8px 10px; border-left: 3px solid #6366f1;
         background: #f5f3ff; font-size: 12px; color: #4f46e5;
       }
-      #preview [data-w-e-type="shadow-dom"]::before {
+      .preview [data-w-e-type="shadow-dom"]::before {
         content: "影子节点（真实渲染由前端 shadow DOM 完成）"; display: block;
       }
-      #preview video { max-width: 100%; background: #111827; }
-      #preview img { max-width: 100%; }
-      #preview table { border-collapse: collapse; margin: 8px 0; }
-      #preview th, #preview td { border: 1px solid var(--border); padding: 5px 9px; text-align: left; }
-      #preview blockquote {
+      .preview video { max-width: 100%; background: #111827; }
+      .preview img { max-width: 100%; }
+      .preview table { border-collapse: collapse; margin: 8px 0; }
+      .preview th, .preview td { border: 1px solid var(--border); padding: 5px 9px; text-align: left; }
+      .preview blockquote {
         margin: 8px 0; padding: 2px 0 2px 12px; border-left: 3px solid #d1d5db; color: #4b5563;
       }
 
       /* textParse* 的字体/字号/底纹对齐 editor-v3/config.ts */
-      #preview [data-w-e-type="textParseTaskTitle"] { color: #000; font: bold 22px/1.5 宋体; }
-      #preview [data-w-e-type="textParseTaskContent"] { color: #000; font: normal 19px/1.5 宋体; }
-      #preview [data-w-e-type="textParsePrompt"] { color: #e13c39; font: bold 22px/1.5 宋体; }
-      #preview [data-w-e-type="textParsePromptElement"] { color: #000; font: bold 19px/1.5 宋体; }
-      #preview [data-w-e-type="textParsePromptElementContent"] { color: #000; font: normal 19px/1.5 宋体; background: #d9d9d9; }
-      #preview [data-w-e-type="textParseQuestionKeywordTitle"] { color: #000; font: bold 19px/1.5 宋体; }
-      #preview [data-w-e-type="textParseQuestionKeywordContent"] { color: #000; font: normal 19px/1.5 宋体; background: #d9d9d9; }
-      #preview [data-w-e-type="textParseSubmitTaskNotice"] { color: #e13c39; font: bold 22px/1.5 宋体; }
-      #preview [data-w-e-type="textParseWorkOrderTitle"] { color: #000; font: bold 19px/1.5 宋体; }
-      #preview [data-w-e-type="textParseWorkOrderContent"] { color: #000; font: normal 19px/1.5 宋体; background: #ffec3d; }
-      #preview [data-w-e-type="textParseSubmitContent"] { color: #000; font: normal 19px/1.5 宋体; background: #ffec3d; }
+      .preview [data-w-e-type="textParseTaskTitle"] { color: #000; font: bold 22px/1.5 宋体; }
+      .preview [data-w-e-type="textParseTaskContent"] { color: #000; font: normal 19px/1.5 宋体; }
+      .preview [data-w-e-type="textParsePrompt"] { color: #e13c39; font: bold 22px/1.5 宋体; }
+      .preview [data-w-e-type="textParsePromptElement"] { color: #000; font: bold 19px/1.5 宋体; }
+      .preview [data-w-e-type="textParsePromptElementContent"] { color: #000; font: normal 19px/1.5 宋体; background: #d9d9d9; }
+      .preview [data-w-e-type="textParseQuestionKeywordTitle"] { color: #000; font: bold 19px/1.5 宋体; }
+      .preview [data-w-e-type="textParseQuestionKeywordContent"] { color: #000; font: normal 19px/1.5 宋体; background: #d9d9d9; }
+      .preview [data-w-e-type="textParseSubmitTaskNotice"] { color: #e13c39; font: bold 22px/1.5 宋体; }
+      .preview [data-w-e-type="textParseWorkOrderTitle"] { color: #000; font: bold 19px/1.5 宋体; }
+      .preview [data-w-e-type="textParseWorkOrderContent"] { color: #000; font: normal 19px/1.5 宋体; background: #ffec3d; }
+      .preview [data-w-e-type="textParseSubmitContent"] { color: #000; font: normal 19px/1.5 宋体; background: #ffec3d; }
     </style>
   </head>
   <body>
     <header>
       <h1>editor-transform · HTML ⇄ Slate JSON</h1>
       <p>
-        贴一段 editor-v3 的 <code>getHtml()</code> 输出 → 转成 Slate JSON → 手动改 JSON →
-        转回 HTML 并渲染。解析和还原都走 wangEditor 自己的规则。
-        第 1 步默认加载的是全量样张（16 个 <code>textParse*</code>、6 个自定义节点和全部内置样式），
-        媒体地址是占位的 <code>/media/*</code>，图片/视频不显示属于正常。
+        两个测试各自独立：<strong>测试一</strong>只做 HTML → JSON（解析），<strong>测试二</strong>只做
+        JSON → HTML（还原），互不影响。测试二可以用它自带的示例 JSON，也可以点「取测试一的输出」
+        把测试一的 JSON 送过来。两边都走 wangEditor 自己的规则。
       </p>
     </header>
 
     <main>
-      <div>
-        <section class="pane">
-          <h2><span class="step">1</span>HTML</h2>
-          <textarea id="input-html" spellcheck="false"></textarea>
-          <button class="primary" id="btn-to-json">转为 JSON →</button>
-        </section>
+      <!-- 测试一：HTML → Slate JSON -->
+      <section class="test">
+        <h2>
+          <span class="badge">测试一</span>HTML <span class="arrow">→</span> Slate JSON
+          <small>看点：JSON 里自定义节点是不是保住了 <code>type</code> 与属性（而不是变成 paragraph）</small>
+        </h2>
 
-        <section class="pane">
-          <h2><span class="step">2</span>Slate JSON（可以手动修改）</h2>
-          <textarea id="slate-io" spellcheck="false" placeholder="点上面的「转为 JSON」，或直接粘一段 Slate JSON"></textarea>
-          <button class="primary" id="btn-to-html">转为 HTML →</button>
-        </section>
-      </div>
+        <div class="grid">
+          <div class="pane">
+            <h3>① 输入 HTML（默认：全量样张）</h3>
+            <textarea id="a-html-in" spellcheck="false"></textarea>
+            <div class="row">
+              <button class="primary" id="a-run">转为 JSON →</button>
+              <button id="a-reset">恢复全量样张</button>
+            </div>
+          </div>
 
-      <section class="pane">
-        <h2><span class="step">3</span>渲染结果</h2>
-        <pre id="html-out">（尚未生成）</pre>
-        <div id="preview"></div>
+          <div class="pane">
+            <h3>② 输出 Slate JSON</h3>
+            <pre id="a-json-out" class="pending">（点「转为 JSON」）</pre>
+            <div class="row">
+              <button id="a-copy">复制 JSON</button>
+              <button id="a-pass">取测试一的输出，填进测试二 ↓</button>
+            </div>
+
+            <div class="pane-part">
+              <h3>③ 输入 HTML 的渲染（对照用，没走本包）</h3>
+              <div class="preview" id="a-preview"></div>
+            </div>
+          </div>
+        </div>
+
+        <p class="note" id="a-note"></p>
+      </section>
+
+      <!-- 测试二：Slate JSON → HTML -->
+      <section class="test">
+        <h2>
+          <span class="badge">测试二</span>Slate JSON <span class="arrow">→</span> HTML
+          <small>看点：生成的 HTML 能不能被前端渲染器认出来（标签、<code>data-w-e-type</code>、属性）</small>
+        </h2>
+
+        <div class="grid">
+          <div class="pane">
+            <h3>① 输入 Slate JSON（可以直接改）</h3>
+            <textarea id="b-json-in" spellcheck="false"></textarea>
+            <div class="row">
+              <button class="primary" id="b-run">转为 HTML →</button>
+              <button id="b-reset">恢复示例 JSON</button>
+            </div>
+          </div>
+
+          <div class="pane">
+            <h3>② 输出 HTML 源码</h3>
+            <pre id="b-html-out" class="pending">（点「转为 HTML」）</pre>
+            <div class="row">
+              <button id="b-copy">复制 HTML</button>
+            </div>
+
+            <div class="pane-part">
+              <h3>③ 输出 HTML 的渲染</h3>
+              <div class="preview" id="b-preview"></div>
+            </div>
+          </div>
+        </div>
+
+        <p class="note" id="b-note"></p>
       </section>
     </main>
 
-    <p id="note"></p>
-
-    <!-- 全量样张：test/fixtures/editor-v3-full.json 经 slateToHtml 转回， -->
+    <!-- 测试一的样张：test/fixtures/editor-v3-full.json 经 slateToHtml 转回， -->
     <!-- 放在 text/plain 里承载，浏览器不会执行，也不用转义 HTML。 -->
     <script type="text/plain" id="sample-html">
   <h1>编辑器全量节点样张</h1>
@@ -207,6 +267,59 @@
   <p><br></p>
     </script>
 
+    <!-- 测试二的样张：手写的小份 Slate JSON，覆盖常用节点与自定义节点。 -->
+    <!-- 形状取自 test/fixtures/editor-v3-full.json，放 JSON 里省得在 JS 里转义。 -->
+    <script type="application/json" id="sample-json">
+[
+  { "type": "header1", "children": [{ "text": "巡检任务单" }] },
+  {
+    "type": "textParseTaskTitle",
+    "lineHeight": "1.5",
+    "children": [
+      {
+        "color": "rgb(0, 0, 0)",
+        "fontSize": "22px",
+        "fontFamily": "宋体",
+        "text": "任务标题",
+        "bold": true
+      }
+    ]
+  },
+  {
+    "type": "paragraph",
+    "children": [
+      { "text": "普通段落，包含 " },
+      { "text": "加粗", "bold": true },
+      { "text": "、" },
+      {
+        "type": "link",
+        "url": "https://www.baidu.com",
+        "target": "_blank",
+        "children": [{ "text": "外链" }]
+      },
+      { "text": " 和 " },
+      { "text": "红色字", "color": "rgb(225, 60, 57)" }
+    ]
+  },
+  { "type": "list-item", "ordered": false, "level": 0, "children": [{ "text": "要点一" }] },
+  { "type": "list-item", "ordered": false, "level": 1, "children": [{ "text": "嵌套要点" }] },
+  { "type": "audio", "src": "/media/sample-6s.mp3", "children": [{ "text": "" }] },
+  { "type": "insert-answer-box", "index": 2, "children": [{ "text": "" }] },
+  {
+    "type": "shadow-dom",
+    "doms": [
+      {
+        "tag": "span",
+        "attrs": { "class": "shadow-pill", "style": { "color": "rgb(225, 60, 57)", "font-weight": "bold" } },
+        "html": "影子节点内容"
+      },
+      { "tag": "b", "attrs": {}, "html": "加粗影子" }
+    ],
+    "children": [{ "text": "" }]
+  }
+]
+    </script>
+
     <script type="importmap">
       {
         "imports": {
@@ -230,70 +343,139 @@
       registerModule(shadowDomSerializerRepair)
 
       const $ = (id) => document.getElementById(id)
-      const inputHtml = $('input-html')
-      const slateIo = $('slate-io')
-      const note = $('note')
 
-      function setNote(text, kind = '') {
-        note.textContent = text
-        note.className = kind
+      const SAMPLE_HTML = $('sample-html').textContent.trim()
+      const SAMPLE_JSON = $('sample-json').textContent.trim()
+
+      const htmlIn = $('a-html-in')
+      const jsonOut = $('a-json-out')
+      const htmlPreview = $('a-preview')
+      const noteA = $('a-note')
+
+      const jsonIn = $('b-json-in')
+      const htmlOut = $('b-html-out')
+      const jsonPreview = $('b-preview')
+      const noteB = $('b-note')
+
+      htmlIn.value = SAMPLE_HTML
+      jsonIn.value = SAMPLE_JSON
+
+      /** 警告按 【码】消息 逐行显示；没有就显示 summary。 */
+      function report(warnings, summary, ok) {
+        if (!warnings.length) return [summary, ok].filter(Boolean).join('　')
+        return warnings.map((w) => `【${w.code}】${w.message}`).join('\n')
       }
 
-      // 解析阶段的警告留着，第 3 步渲染完不要把它冲掉。
-      let warningText = ''
-
-      // 全量样张：test/fixtures/editor-v3-full.json 经 slateToHtml 转回的 HTML，
-      // 覆盖 16 个 textParse*、6 个自定义节点，以及 header / 表格 / 列表 / 引用 /
-      // 代码块和全部行内标记。HTML 放在页面里的 <script type="text/plain"> 中，
-      // 省得在 JS 字符串里转义；媒体地址是占位的 /media/*，demo 里没有这些文件。
-      inputHtml.value = $('sample-html').textContent.trim()
-
-      function render(html) {
-        $('html-out').textContent = html || '（空文档）'
-        $('preview').innerHTML = html
+      function setNote(el, text, kind) {
+        el.textContent = text
+        el.className = kind ? `note ${kind}` : 'note'
       }
 
-      /* 1 → 2：HTML 转 Slate JSON */
-      $('btn-to-json').addEventListener('click', () => {
+      function showPending(pre, text) {
+        pre.textContent = text
+        pre.className = 'pending'
+      }
+
+      function showCode(pre, text) {
+        pre.textContent = text
+        pre.className = ''
+      }
+
+      async function copy(text, el, ok) {
+        try {
+          await navigator.clipboard.writeText(text)
+          setNote(el, ok)
+        } catch (error) {
+          setNote(el, `复制失败，手动选一下：${error.message}`, 'error')
+        }
+      }
+
+      /* ── 测试一：HTML → Slate JSON ─────────────────────────────────── */
+
+      let lastJson = ''
+
+      function runHtmlToJson() {
         const warnings = []
         try {
-          const value = htmlToSlate(inputHtml.value, { onWarning: (w) => warnings.push(w) })
-          slateIo.value = JSON.stringify(value, null, 2)
-          slateIo.classList.remove('invalid')
-          warningText = warnings.map((w) => w.message).join('\n')
-          setNote(warningText, warningText ? 'warn' : '')
+          const value = htmlToSlate(htmlIn.value, { onWarning: (w) => warnings.push(w) })
+          lastJson = JSON.stringify(value, null, 2)
+          showCode(jsonOut, lastJson)
+          htmlPreview.innerHTML = htmlIn.value
+          setNote(
+            noteA,
+            report(warnings, `解析完成：${value.length} 个顶层节点，JSON ${lastJson.length} 字符。`, ''),
+            warnings.length ? 'warn' : '',
+          )
         } catch (error) {
-          slateIo.classList.add('invalid')
-          warningText = ''
-          render('')
-          setNote(`解析失败：${error.message}`, 'error')
+          lastJson = ''
+          showPending(jsonOut, '（解析失败）')
+          htmlPreview.innerHTML = ''
+          setNote(noteA, `解析失败：${error.message}`, 'error')
         }
+      }
+
+      $('a-run').addEventListener('click', runHtmlToJson)
+      $('a-reset').addEventListener('click', () => {
+        htmlIn.value = SAMPLE_HTML
+        runHtmlToJson()
+      })
+      $('a-copy').addEventListener('click', () => {
+        if (!lastJson) return setNote(noteA, '还没有 JSON 可复制。', 'warn')
+        copy(lastJson, noteA, 'JSON 已复制到剪贴板。')
+      })
+      $('a-pass').addEventListener('click', () => {
+        if (!lastJson) return setNote(noteA, '还没有 JSON 可送给测试二。', 'warn')
+        jsonIn.value = lastJson
+        runJsonToHtml()
+        setNote(noteA, '已把测试一的 JSON 填进测试二，测试二下面是它的渲染结果。')
       })
 
-      /* 2 → 3：Slate JSON 转 HTML 并渲染 */
-      $('btn-to-html').addEventListener('click', () => {
+      /* ── 测试二：Slate JSON → HTML ─────────────────────────────────── */
+
+      function runJsonToHtml() {
         let value
         try {
-          value = JSON.parse(slateIo.value)
+          value = JSON.parse(jsonIn.value)
         } catch (error) {
-          slateIo.classList.add('invalid')
-          render('')
-          setNote(`JSON 格式错误：${error.message}`, 'error')
+          jsonIn.classList.add('invalid')
+          showPending(htmlOut, '（JSON 格式错误）')
+          jsonPreview.innerHTML = ''
+          setNote(noteB, `JSON 格式错误：${error.message}`, 'error')
           return
         }
-        slateIo.classList.remove('invalid')
+        jsonIn.classList.remove('invalid')
+
+        const warnings = []
         try {
-          render(slateToHtml(value))
-          setNote(warningText, warningText ? 'warn' : '')
+          const html = slateToHtml(value, { onWarning: (w) => warnings.push(w) })
+          showCode(htmlOut, html || '（空文档）')
+          jsonPreview.innerHTML = html
+          setNote(
+            noteB,
+            report(warnings, `还原完成：${html.length} 字节 HTML。`, ''),
+            warnings.length ? 'warn' : '',
+          )
         } catch (error) {
-          render('')
-          setNote(`转换失败：${error.message}`, 'error')
+          showPending(htmlOut, '（转换失败）')
+          jsonPreview.innerHTML = ''
+          setNote(noteB, `转换失败：${error.message}`, 'error')
         }
+      }
+
+      $('b-run').addEventListener('click', runJsonToHtml)
+      $('b-reset').addEventListener('click', () => {
+        jsonIn.value = SAMPLE_JSON
+        runJsonToHtml()
+      })
+      $('b-copy').addEventListener('click', () => {
+        const html = htmlOut.classList.contains('pending') ? '' : htmlOut.textContent
+        if (!html) return setNote(noteB, '还没有 HTML 可复制。', 'warn')
+        copy(html, noteB, 'HTML 已复制到剪贴板。')
       })
 
-      // 首屏直接跑一遍，省得先点按钮
-      $('btn-to-json').click()
-      $('btn-to-html').click()
+      // 首屏各自跑一遍，省得先点按钮；两个测试互不依赖。
+      runHtmlToJson()
+      runJsonToHtml()
     </script>
   </body>
 </html>

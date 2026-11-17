@@ -43,17 +43,21 @@ const out = slateToHtml(value);
 ## 安装
 
 ```bash
-pnpm add editor-transform @wangeditor-next/editor
+pnpm add editor-transform
 ```
 
-Node 环境还需要 `jsdom` 与 `global-jsdom`（包主入口会自动 `import 'global-jsdom/register'`）：
+**后端只装这一个包就够了。** `@wangeditor-next/editor`、`jsdom`、`global-jsdom` 都写在
+`dependencies` 里，包管理器会自动带进来，不需要你逐个 `add`；主入口还会先
+`import 'global-jsdom/register'` 再加载 wangEditor，顺序由 SDK 保证，后端不用做任何 DOM 准备。
 
-```bash
-pnpm add jsdom global-jsdom
-```
-
-> **版本一致性**：前后端请使用相同版本的 `@wangeditor-next/editor`，否则 HTML 解析规则可能不一致。
-> 本 SDK 在 `6.6.2` 上完整验证。
+> **什么时候才需要显式加 `@wangeditor-next/editor`**
+>
+> 1. 你自己的代码要直接 `import` 它（比如自造引擎实例）。pnpm 的隔离布局下顶层看不到
+>    传递依赖，不声明会 `ERR_MODULE_NOT_FOUND` —— 这是 pnpm 的规则，不是本包的要求。
+> 2. 你想把版本对齐写进 lockfile，见下。
+>
+> **版本一致性**：SDK 锁定 `6.6.2`（本 SDK 在 `6.6.2` 上完整验证）。如果你前端编辑器用的是
+> 别的版本，请显式声明同一个版本，否则前后端 HTML 解析规则可能不一致。
 
 ---
 

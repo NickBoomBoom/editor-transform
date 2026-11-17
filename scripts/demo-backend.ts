@@ -8,16 +8,15 @@
  *   node scripts/demo-backend.ts --editor-v3        # 用 editor-v3 二次开发编辑器的真实产物
  *   node scripts/demo-backend.ts payload.html       # 用文件里的 HTML
  *
- * 只要 dist/editor-v3-modules.mjs 存在就会自动注册二次开发编辑器的自定义节点，
- * 否则 audio / answer-box / proxyBrowser / shadow-dom / textParse* 会静默退化成
- * paragraph（属性一起丢）。
+ * editor-v3 二次开发编辑器的自定义节点（audio / answer-box / proxyBrowser /
+ * shadow-dom / textParse*）由 SDK 在首次转换时自动注册，这里不需要手动注册；
+ * 只有 dist/editor-v3-modules.mjs 缺失时它们才会静默退化成 paragraph（属性一起丢）。
  */
 import { existsSync, readFileSync } from 'node:fs'
 
 import {
   getEngineKind,
   htmlToSlate,
-  registerModule,
   slateToHtml,
   type SlateNode,
   type SlateValue,
@@ -48,19 +47,20 @@ const line = (title: string): void => {
   console.log(`\n${'─'.repeat(72)}\n${title}\n${'─'.repeat(72)}`)
 }
 
-/* ------------------------------------- 0. 注册二次开发编辑器的自定义模块 */
+/* --------------------- 0. editor-v3 自定义模块（SDK 自动注册，这里只报数量） */
 const vendorUrl = new URL('../dist/editor-v3-modules.mjs', import.meta.url)
 const wantsEditorV3 = process.argv.includes('--editor-v3')
 
 if (existsSync(vendorUrl)) {
+  // 只读元信息用于打印。模块本身由 SDK 在第一次转换时装上：require() 与 import
+  // 同一个文件返回同一个模块实例，所以这里 import 一遍不会重复注册。
   const vendor = (await import(vendorUrl.href)) as {
-    editorV3NodeModules: unknown[]
     EDITOR_V3_SUMMARY: { modules: number; parseConfs: number; toHtmlConfs: number; types: string[] }
   }
-  for (const mod of vendor.editorV3NodeModules) registerModule(mod)
   const { modules, parseConfs, toHtmlConfs } = vendor.EDITOR_V3_SUMMARY
   console.log(
-    `已注册 editor-v3 自定义模块：${modules} 个模块 / ${parseConfs} 条解析规则 / ${toHtmlConfs} 条序列化规则`,
+    `editor-v3 自定义模块已内置：${modules} 个模块 / ${parseConfs} 条解析规则 / ` +
+      `${toHtmlConfs} 条序列化规则（首次转换时自动注册，无需 registerModule）`,
   )
 } else if (wantsEditorV3) {
   console.log('找不到 dist/editor-v3-modules.mjs —— 先跑 `pnpm sync:editor-v3`（必须在 build 之后）。')
@@ -145,49 +145,20 @@ const identical = original === html
 console.log('原样往返是否与输入逐字节一致:', identical)
 console.log('输入长度:', html.length, ' 输出长度:', out.length)
 
+if (!identical && !original.includes('[object Object]')) {
+  // 剩下的差异通常只是样式属性的空格规范化（color:red → color: red），把第一处
+  // 不同指出来，免得读者以为是内容丢了。
+  const at = [...html].findIndex((char, index) => char !== original[index])
+  console.log(`  第一处差异在第 ${at} 个字符（一般只是样式的空格规范化）：`)
+  console.log(`    输入: …${html.slice(Math.max(0, at - 30), at + 25)}…`)
+  console.log(`    输出: …${original.slice(Math.max(0, at - 30), at + 25)}…`)
+}
+
 if (original.includes('[object Object]')) {
-  // 这是 editor-v3 自身 elemToHtml 的缺陷：parse 阶段 style 被
-  // styleStringToObject 转成对象，序列化时却直接拼 `${attrs[key]}`。
-  // wangEditor 的注册表是 `ol[type] = elemToHtml`，后注册覆盖先注册 ——
-  // 所以不用改他们的仓库也能修好。
-  console.log('\n检测到 shadow-dom 的 style 被序列化成 [object Object]（editor-v3 自身的缺陷）。')
-  registerModule({
-    elemsToHtml: [
-      {
-        type: 'shadow-dom',
-        elemToHtml: (elem: Record<string, unknown>): string => {
-          const doms = Array.isArray(elem.doms) ? (elem.doms as Record<string, unknown>[]) : []
-          const inner = doms
-            .map((dom) => {
-              const attrs = Object.entries((dom.attrs ?? {}) as Record<string, unknown>)
-                .map(([key, raw]) => {
-                  const text =
-                    raw && typeof raw === 'object'
-                      ? Object.entries(raw as Record<string, unknown>)
-                          .map(([prop, val]) => `${prop}: ${val}`)
-                          .join('; ')
-                      : String(raw)
-                  return ` ${key}="${text}"`
-                })
-                .join('')
-              return `<${String(dom.tag)}${attrs}>${String(dom.html)}</${String(dom.tag)}>`
-            })
-            .join('')
-          return `<div data-w-e-type="shadow-dom">${inner}</div>`
-        },
-      },
-    ],
-  })
-  const patched = slateToHtml(value)
-  if (patched === html) {
-    console.log('覆盖 shadow-dom 的序列化后: 与输入逐字节一致')
-  } else {
-    // 剩下的差异通常只是样式属性的空格规范化（color:red → color: red），
-    // 把第一处不同指出来，免得读者以为是内容丢了。
-    const at = [...html].findIndex((char, index) => char !== patched[index])
-    console.log(`覆盖 shadow-dom 的序列化后: 仍有差异，第一处在第 ${at} 个字符`)
-    console.log(`  输入: …${html.slice(Math.max(0, at - 30), at + 25)}…`)
-    console.log(`  输出: …${patched.slice(Math.max(0, at - 30), at + 25)}…`)
-  }
-  console.log(patched)
+  // 内置修复在「同 type 后注册覆盖」的规则里：parse 阶段 style 被
+  // styleStringToObject 转成对象，editor-v3 自己的 elemToHtml 却直接拼
+  // `${attrs[key]}`。走到这里说明修复没生效（例如调过 disableBuiltinModules）。
+  console.log('\n⚠ 仍检测到 shadow-dom 的 style 被序列化成 [object Object]：内置修复没生效。')
+} else if (html.includes('shadow-dom')) {
+  console.log('\nshadow-dom 的样式由 SDK 内置的序列化修复处理，没有 [object Object]。')
 }

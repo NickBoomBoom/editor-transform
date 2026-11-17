@@ -67,14 +67,11 @@ pnpm add editor-transform
 
 ```js
 // 主入口会先注册 jsdom，再加载 wangEditor，顺序由 SDK 保证
-import { htmlToSlate, registerModule, slateToHtml } from "editor-transform";
+import { htmlToSlate, slateToHtml } from "editor-transform";
 
-// ① 先注册 editor-v3 的自定义节点（只有 6 个模块，注册一次，进程内全局生效）。
-//    不注册的话 audio / answer-box / shadow-dom / textParse* 会静默退化成 paragraph。
-import { editorV3NodeModules } from "editor-transform/editor-v3-modules";
-for (const mod of editorV3NodeModules) registerModule(mod);
-
-// ② 正常转换
+// editor-v3 的自定义节点（audio / answer-box / proxyBrowser / shadow-dom /
+// textParse*）以及 shadow-dom 的序列化修复，SDK 会在第一次转换时自动装上，
+// 这里不需要（也不该）自己 registerModule。
 const value = htmlToSlate(frontendHtml, {
   onWarning: (w) => logger.warn(w.code, w.message),
 });
@@ -83,9 +80,24 @@ const value = htmlToSlate(frontendHtml, {
 const html = slateToHtml(value);
 ```
 
-`editor-transform/editor-v3-modules` 是 `pnpm sync:editor-v3` 生成的产物（把前端仓库里
+自动注册发生在**建引擎之前**：wangEditor 的 `Boot.registerModule` 只在构造编辑器时装
+`editorPlugin`，规则必须赶在第一个编辑器出现之前就位 —— 这个时机由 SDK 保证，调用方只用
+导入函数。
+
+想要「裸 wangEditor」的行为（例如你自己的模块集合与它冲突），在第一次转换之前调
+`disableBuiltinModules()`；`enableBuiltinModules()` 会重新装上并返回装入的集合，方便自检脚本
+做对照。wangEditor 的注册表只能加不能删，所以这两个开关只对**还没装上的**模块有效，要在首次
+转换前决定。
+
+规则来自随包发布的 `editor-transform/editor-v3-modules`（`pnpm sync:editor-v3` 的产物，把前端仓库里
 editor-v3 的解析/序列化/插件规则打包出来），所以这个包需要打进后端镜像 —— 见
 [对接二次开发编辑器（editor-v3）](#对接二次开发编辑器editor-v3)。
+
+> **Node < 22.12**：`require(esm)` 不可用，自动装不上，SDK 会发一条
+> `BUILTIN_MODULES_UNAVAILABLE` 警告（而不是让自定义节点静默退化成 paragraph）。这时显式
+> `import { editorV3NodeModules } from "editor-transform/editor-v3-modules"` 再逐个
+> `registerModule` —— 不过 `internal` 引擎本身也依赖 `require(esm)`，这个版本上本来就只有
+> `public` 可用。
 
 ### 浏览器 / 前端
 
@@ -93,7 +105,9 @@ editor-v3 的解析/序列化/插件规则打包出来），所以这个包需�
 import { htmlToSlate, slateToHtml } from "editor-transform/browser";
 ```
 
-浏览器入口只用 wangEditor 公开 API（DOM 本来就有，不需要 jsdom）。
+浏览器入口只用 wangEditor 公开 API（DOM 本来就有，不需要 jsdom），也**不**自动注册 editor-v3
+的自定义节点：前端仓库本来就有这些模块，自己
+`registerModule(editorV3NodeModules)` 即可（`shadowDomSerializerRepair` 也从这里导出）。
 
 ### 一次性绑定配置
 
@@ -236,6 +250,9 @@ htmlToSlate("\n<h1>标题</h1>\n<p>正文</p>\n");
 `paragraph`**，`type` 和属性一起丢（因为外层的 `div` 还在，文字侥幸留下，连 `CONTENT_LOSS`
 都不会报，只有 `UNKNOWN_TAG`）。
 
+**随包发布的 editor-v3 模块由 SDK 自动注册**（Node 入口，第一次转换时装上），所以这一节只针对
+「你自己还有额外模块」的情况。
+
 `internal` 引擎用的是 bundle 的**副本**，所以不要直接 `import { Boot } from '@wangeditor-next/editor'`
 去注册（那注册到的是另一个实例），用 SDK 的 API：
 
@@ -250,6 +267,10 @@ getEditorApi(); // 需要别的扩展点时取模块命名空间
 `editorPlugin` 重新执行（wangEditor 只在构造编辑器时应用插件，`isVoid` 之类因此需要重建）。
 同一个模块对象重复注册是 no-op。**在第一次 `htmlToSlate`/`slateToHtml` 之前注册**最省事，
 之后注册也没问题，只是要多付一次编辑器重建。
+
+> 内置模块是在第一次转换时才装上的，顺序由 SDK 决定（`shadow-dom` 修复永远排在它覆盖的那条
+> 内置规则之后）。所以要**覆盖内置规则**得在第一次转换之后注册，或者先用
+> `disableBuiltinModules()` 关掉内置集合再自己装 —— 注册表只能加不能删，先注册的会被内置规则盖掉。
 
 选择器与 `type` 都注册成什么，可以用后注册覆盖前注册来修上游模块自身的缺陷 —— 见下面的例子。
 
@@ -278,13 +299,10 @@ node scripts/demo-backend.ts --editor-v3
 
 > `tsup` 会清空 `dist`，所以 `sync:editor-v3` 必须在 `build` 之后跑（`pnpm demo` 已经帮你串好）。
 
-后端这样用：
+后端这样用（`import` 就够了，模块由 SDK 自己装）：
 
 ```js
-import { htmlToSlate, registerModule, slateToHtml } from "editor-transform";
-import { editorV3NodeModules } from "editor-transform/editor-v3-modules";
-
-for (const mod of editorV3NodeModules) registerModule(mod);
+import { htmlToSlate, slateToHtml } from "editor-transform";
 
 const value = htmlToSlate(editorGetHtml);
 // [{ type: 'textParseTaskTitle', children: [...] },
@@ -301,44 +319,25 @@ slateToHtml(value); // 回到他们的 HTML
 因此不会把 `.tsx` 菜单、`.scss` 或浏览器专用的 `proxy-browser/shadowdom.ts`（模块求值时就
 `customElements.define`）带进来。
 
-### 修上游 `elemToHtml` 的缺陷（不改他们的仓库）
+### `shadow-dom` 的序列化修复（SDK 已内置）
 
 `editor-v3` 的 `shadow-dom` 有一个真实缺陷：`parse-elem-html.ts` 用 `styleStringToObject` 把
 `style` 转成了对象，`elem-to-html.ts` 却直接拼 `` `${attrs[key]}` ``，于是回写成
 `<span style="[object Object]">`（而且属性之间没有空格分隔）。
 
 wangEditor 的注册表是 `ol[type] = elemToHtml`、`jc[selector] = parseElemHtml`，**后者覆盖前者**，
-所以注册一条同 `type` 的规则就能修好：
+所以覆盖一条同 `type` 的规则就能修好，不用改他们的仓库。SDK 已经内置了这条修复
+（`src/repairs.ts`，排在 editor-v3 的模块之后，所以能覆盖掉它）：
 
 ```js
-registerModule({
-  elemsToHtml: [
-    {
-      type: "shadow-dom",
-      elemToHtml(elem) {
-        const doms = Array.isArray(elem.doms) ? elem.doms : [];
-        const inner = doms
-          .map((dom) => {
-            const attrs = Object.entries(dom.attrs ?? {})
-              .map(([key, raw]) => {
-                const value =
-                  raw && typeof raw === "object"
-                    ? Object.entries(raw).map(([p, v]) => `${p}: ${v}`).join("; ")
-                    : String(raw);
-                return ` ${key}="${value}"`; // 注意这里补了空格
-              })
-              .join("");
-            return `<${dom.tag}${attrs}>${dom.html}</${dom.tag}>`;
-          })
-          .join("");
-        return `<div data-w-e-type="shadow-dom">${inner}</div>`;
-      },
-    },
-  ],
-});
+// 想手动来一遍（例如调过 disableBuiltinModules 之后）
+import { registerModule, shadowDomSerializerRepair } from "editor-transform";
+registerModule(shadowDomSerializerRepair);
 ```
 
-`scripts/demo-backend.ts` 会把「覆盖前 / 覆盖后」的差异打出来（`--editor-v3` 时会自动做）。
+它比上游多做两件事：把对象 `style` 展开成 `color: red`（`; ` 连接），以及属性之间补空格。
+所以回写 HTML 与输入可能有这类空格差异 —— `scripts/demo-backend.ts --editor-v3` 会把第一处
+差异打出来，通常就是它，而不是内容丢失。
 
 ---
 
@@ -351,6 +350,8 @@ createTransformer(options?: TransformOptions): Transformer
 configure(options: TransformOptions): void      // 设置全局默认值
 setEngineFactory(factory: EngineFactory): void  // 换掉引擎实现
 registerModule(mod: unknown, mode?: EngineMode): void
+disableBuiltinModules(): void                   // 关掉内置模块，须在首次转换前
+enableBuiltinModules(): readonly unknown[]      // 重新装上并返回装入的集合
 getEditorApi(mode?: EngineMode): EditorModule | null
 getEngineKind(mode?: EngineMode): 'internal' | 'public'
 getInternalEngineFailure(): string | null       // 快通道不可用的原因，正常时 null
@@ -367,7 +368,8 @@ interface TransformOptions {
 }
 ```
 
-警告码：`FALLBACK_ENGINE`、`CONTENT_LOSS`、`UNKNOWN_TAG`、`EMPTY_RESULT`。
+警告码：`FALLBACK_ENGINE`、`CONTENT_LOSS`、`UNKNOWN_TAG`、`EMPTY_RESULT`、
+`BUILTIN_MODULES_UNAVAILABLE`（随包的 editor-v3 模块没找到，自定义节点会退化成 paragraph）。
 
 `allowedTags` 只在一个场景下需要：自定义标签被解析规则**改写成别的标签**。比如注册了
 `selector: "hi"` → `{ bold: true }`，输出是 `<strong>X</strong>`，`<hi>` 不会回来，
@@ -393,7 +395,7 @@ SDK 会报 `UNKNOWN_TAG`；传 `allowedTags: ["hi"]` 就静默了。其余情况
 ```bash
 pnpm install
 pnpm typecheck      # tsc --noEmit
-pnpm test           # node --expose-gc --test "test/**/*.test.ts"（35 个用例）
+pnpm test           # node --expose-gc --test "test/**/*.test.ts"（37 个用例）
 pnpm build          # tsup（ESM+CJS）+ tsc（d.ts）
 ```
 
@@ -431,10 +433,10 @@ pnpm demo           # build + sync:editor-v3 + 起静态服务 → http://localh
 2. **Slate JSON** —— 点「转为 JSON」得到后端拿到的数据，可以直接手改
 3. **渲染结果** —— 点「转为 HTML」把 JSON 转回 HTML，左边显示源码，右边实时渲染
 
-自定义节点的 6 个模块在页面加载时自动注册（用 `demo/vendor/editor-v3-modules.js`），
-不注册的话 `audio` / `answer-box` / `shadow-dom` / `textParse*` 会静默退化成 `paragraph`。
+页面用的是 `editor-transform/browser`，而浏览器入口**不**自动注册内置模块，所以 6 个自定义模块
+是在页面加载时手动注册的（用 `demo/vendor/editor-v3-modules.js`）—— 前端侧要自己做的就是这一步。
 解析阶段的警告（未识别标签、丢内容）显示在底部一行，不会被后续的渲染冲掉。
-页面还按上文「修上游 `elemToHtml` 的缺陷」覆盖了 `shadow-dom` 的序列化，
+页面同样手动覆盖了 `shadow-dom` 的序列化（`shadowDomSerializerRepair`），
 否则样张里的 `shadow-dom` 样式会变成 `[object Object]`。
 
 > 预览里的 `audio`/`answer-box`/`proxyBrowser`/`shadow-dom` 是用几行 CSS 占位显示的，
@@ -452,7 +454,8 @@ node scripts/demo-backend.ts x.html      # 自己的 HTML
 ```
 
 打印 HTML → Slate JSON → 后端改写（改文本 + 调自定义节点属性）→ HTML 的完整过程，
-用的是 `internal` 引擎。只要 `dist/editor-v3-modules.mjs` 存在就会自动注册自定义模块。
+用的是 `internal` 引擎。脚本自己不注册任何模块：自定义节点由 SDK 在首次转换时自动装上，
+它只把产物里的模块数量打出来。
 
 ---
 
@@ -462,12 +465,15 @@ node scripts/demo-backend.ts x.html      # 自己的 HTML
   换版本后如果匹配不上，会自动回退到 `public` 并发 `FALLBACK_ENGINE` 警告（附带具体原因），
   不会静默出错。升级后跑一次 `pnpm check`。
 - patch 出来的副本落在 `os.tmpdir()/editor-transform/`，需要可写；不可写时同样回退。
-- `require(esm)` 需要 Node ≥ 22.12（本包在 Node 24 上验证）。
+- `require(esm)` 需要 Node ≥ 22.12（本包在 Node 24 上验证）；内置模块也是在**第一次转换时**
+  同步 `require()` 进来的，所以自动注册同样有这个门槛，达不到只发
+  `BUILTIN_MODULES_UNAVAILABLE` 警告，不影响其余功能。
 - 主入口 `editor-transform` 会往全局注册 jsdom（wangEditor 在模块求值时就要 `document`），
   这是使用 wangEditor 的固有代价；浏览器或已有 DOM 的场景用 `editor-transform/browser`。
 - `public` 引擎在 Node 上会泄漏内存，不要用在常驻进程里。
 - 空 HTML 往返是 `<p><br></p>`（wangEditor 自己也会这么渲染），不是空字符串。
-- 自定义节点不注册模块时**不会报 `CONTENT_LOSS`**（外层 `div` 让文字活了下来），只有
-  `UNKNOWN_TAG`。所以后端必须把 `registerModule` 当作启动时的固定动作，而不是可选项。
+- 自定义节点**没装上**解析规则时**不会报 `CONTENT_LOSS`**（外层 `div` 让文字活了下来），只有
+  `UNKNOWN_TAG` —— 这正是 SDK 默认自动注册、并且在产物缺失时发 `BUILTIN_MODULES_UNAVAILABLE`
+  警告的原因。调过 `disableBuiltinModules()` 之后，`registerModule` 就重新变成必须动作。
 - `scripts/sync-editor-v3.ts` 打包的是**当前**前端源码快照。前端改了节点的 parse/toHtml 后，
   要重新 `pnpm sync:editor-v3`，否则前后端规则会不一致。

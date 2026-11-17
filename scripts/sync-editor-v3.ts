@@ -227,6 +227,13 @@ async function bundle(entrySource: string, outfile: string): Promise<void> {
     // 不打包编辑器本体：后端与 demo 都必须和 SDK 用同一个副本，否则
     // 插件里的 DomEditor/SlateTransforms 会作用到另一个实例上。
     external: ['@wangeditor-next/editor'],
+    // editor-v3 的 shadow-dom 模块里留着两条调试日志（parse-elem-html.ts:26 与
+    // elem-to-html.ts:7）。产物现在由 Node 入口在第一次转换时自动装上，这两条会跟着
+    // 进默认链路，每次解析都往后端 stdout 打 HTMLDivElement，所以在打包时去掉。
+    // pure 只是打标记，要配合 minifySyntax 才真的删掉；console.warn / console.error
+    // 以及有返回值的调用都保留（不重命名标识符）。
+    pure: ['console.log'],
+    minifySyntax: true,
     outfile,
     logLevel: 'warning',
   })

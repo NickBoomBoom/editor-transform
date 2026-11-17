@@ -17,14 +17,19 @@ import { createRequire } from 'node:module'
 import {
   DEFAULT_ALLOWED_TAGS,
   collectUnknownTags,
+  disableBuiltinModules,
   disposeEngines,
+  enableBuiltinModules,
   getEngineKind,
   getInternalEngineFailure,
   htmlToSlate,
-  registerModule,
   slateToHtml,
   type SlateValue,
 } from '../src/node.ts'
+
+// 第 4 节要展示「没注册模块时自定义节点会退化成 paragraph」，而 wangEditor 的注册表
+// 只能加不能删，所以必须在任何一次转换之前把它关掉，之后再 enable 回来看对比。
+disableBuiltinModules()
 
 const ITERATIONS = Number(process.env.ITERATIONS ?? 2000)
 
@@ -156,11 +161,10 @@ if (!existsSync(VENDOR)) {
   console.log('未找到 dist/editor-v3-modules.mjs —— 先跑 `pnpm sync:editor-v3`（它必须在 build 之后）。')
 } else {
   const vendor = (await import(VENDOR.href)) as {
-    editorV3NodeModules: unknown[]
     EDITOR_V3_SUMMARY: { modules: number; parseConfs: number; toHtmlConfs: number; types: string[] }
     EDITOR_V3_SOURCE: string
   }
-  const { editorV3NodeModules, EDITOR_V3_SUMMARY: summary, EDITOR_V3_SOURCE: source } = vendor
+  const { EDITOR_V3_SUMMARY: summary, EDITOR_V3_SOURCE: source } = vendor
 
   // 用他们 elemToHtml 的真实形状拼一段样张：answer-box 是 void 节点，内部不带文字。
   const customSample = [
@@ -176,10 +180,11 @@ if (!existsSync(VENDOR)) {
   const customTypes = (html: string): string[] =>
     htmlToSlate(html, { onWarning: () => {} }).map((node) => node.type as string)
 
-  // 必须在注册之前采样：wangEditor 的注册表是进程级的，注册后无法撤销。
+  // 内置模块此时是关掉的，所以这一次采样就是「裸 wangEditor」的行为。
   const before = customTypes(customSample)
 
-  for (const mod of editorV3NodeModules) registerModule(mod)
+  // 打开内置集合：SDK 平时就是在这个时机（首次转换前）自动装上的。
+  const installed = enableBuiltinModules()
 
   const warnings: string[] = []
   const value = htmlToSlate(customSample, { onWarning: (w) => warnings.push(w.code) })
@@ -188,6 +193,7 @@ if (!existsSync(VENDOR)) {
 
   console.log(`源码目录（只读）: ${source}`)
   console.log(`模块 ${summary.modules} 个 · 解析规则 ${summary.parseConfs} 条 · 序列化规则 ${summary.toHtmlConfs} 条`)
+  console.log(`本次装入 ${installed.length} 条模块条目（含 shadow-dom 序列化修复）`)
   console.log(`自定义节点类型 ${summary.types.length} 个: ${summary.types.join(' ')}`)
   console.log(`\n注册前: ${before.join(', ')}`)
   console.log(`注册后: ${after.join(', ')}`)
@@ -199,17 +205,18 @@ if (!existsSync(VENDOR)) {
   const missed = expected.filter((type) => !after.includes(type))
   if (missed.length > 0) {
     console.log(`\n⚠ 样张里出现、但没解析成自定义 type 的节点: ${missed.join(' ')}`)
-    console.log('  说明模块没生效（注册时机不对，或者漏了 registerModule）。')
+    console.log('  说明内置模块没生效（disableBuiltinModules 之后没 enableBuiltinModules）。')
   } else {
     console.log(`\n样张里出现的 ${expected.length} 个自定义节点全部解析成功。`)
   }
 
-  // 他们的 shadow-dom 序列化会把对象 style 拼成 [object Object]；SDK 用「同 type 后注册覆盖」修。
+  // editor-v3 的 shadow-dom 序列化会把对象 style 拼成 [object Object]；SDK 用
+  // 「同 type 后注册覆盖」修（src/repairs.ts），它属于内置集合，默认生效。
   if (rendered.includes('[object Object]')) {
-    console.log('\n⚠ shadow-dom 的 style 被序列化成 [object Object]（editor-v3 自身 elemToHtml 的缺陷）。')
-    console.log('  可在不改他们仓库的前提下覆盖：registerModule({ elemsToHtml: [{ type: "shadow-dom", elemToHtml }] })')
+    console.log('\n⚠ shadow-dom 的 style 被序列化成 [object Object]：内置修复没生效。')
+    console.log('  检查是否调了 disableBuiltinModules()，或用 registerModule(shadowDomSerializerRepair) 手动补上。')
   } else {
-    console.log('\n自定义节点回写正常，没有 [object Object] 之类的序列化缺陷。')
+    console.log('\n自定义节点回写正常（含 shadow-dom 的 style），没有 [object Object] 之类的序列化缺陷。')
   }
 }
 

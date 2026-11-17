@@ -1,7 +1,7 @@
 var __defProp = Object.defineProperty;
 var __export = (target, all) => {
   for (var name in all)
-    __defProp(target, name, { get: all[name], enumerable: true });
+    __defProp(target, name, { get: all[name], enumerable: !0 });
 };
 
 // ../../jcjy/sd-pc-front/src/components-base/editor-v3/module/audio/parse-elem-html.ts
@@ -10,10 +10,9 @@ __export(parse_elem_html_exports, {
   parseHtmlConf: () => parseHtmlConf
 });
 function parseHtml(elem, _children, _editor) {
-  const src = elem.querySelector("cp-audio-player")?.getAttribute("src") || elem.querySelector("audio")?.getAttribute("src") || elem.querySelector("audio")?.querySelector("source")?.getAttribute("src") || "";
   return {
     type: "audio",
-    src,
+    src: elem.querySelector("cp-audio-player")?.getAttribute("src") || elem.querySelector("audio")?.getAttribute("src") || elem.querySelector("audio")?.querySelector("source")?.getAttribute("src") || "",
     children: [
       {
         text: ""
@@ -32,9 +31,8 @@ __export(elem_to_html_exports, {
   audioToHtmlConf: () => audioToHtmlConf
 });
 function audioToHtml(elemNode) {
-  const { src } = elemNode;
-  const res = `<div data-w-e-type="audio"><cp-audio-player src="${src}" style="margin:0 auto;"/></div>`;
-  return res;
+  let { src } = elemNode;
+  return `<div data-w-e-type="audio"><cp-audio-player src="${src}" style="margin:0 auto;"/></div>`;
 }
 var audioToHtmlConf = {
   type: "audio",
@@ -44,28 +42,13 @@ var audioToHtmlConf = {
 // ../../jcjy/sd-pc-front/src/components-base/editor-v3/module/audio/plugin.ts
 import { DomEditor, SlateTransforms } from "@wangeditor-next/editor";
 function withAudio(editor) {
-  const { isVoid, normalizeNode } = editor;
-  const newEditor = editor;
-  newEditor.isVoid = (elem) => {
-    const { type } = elem;
-    if (type === "audio") {
-      return false;
-    }
-    return isVoid(elem);
-  };
-  newEditor.normalizeNode = ([node, path]) => {
-    const type = DomEditor.getNodeType(node);
-    if (type === "audio") {
-      const isLast = DomEditor.isLastNode(newEditor, node);
-      if (isLast) {
-        SlateTransforms.insertNodes(newEditor, DomEditor.genEmptyParagraph(), {
-          at: [path[0] + 1]
-        });
-      }
-    }
-    return normalizeNode([node, path]);
-  };
-  return newEditor;
+  let { isVoid, normalizeNode } = editor, newEditor = editor;
+  return newEditor.isVoid = (elem) => {
+    let { type } = elem;
+    return type === "audio" ? !1 : isVoid(elem);
+  }, newEditor.normalizeNode = ([node, path]) => (DomEditor.getNodeType(node) === "audio" && DomEditor.isLastNode(newEditor, node) && SlateTransforms.insertNodes(newEditor, DomEditor.genEmptyParagraph(), {
+    at: [path[0] + 1]
+  }), normalizeNode([node, path])), newEditor;
 }
 var plugin_default = withAudio;
 
@@ -75,11 +58,8 @@ __export(parse_elem_html_exports2, {
   parseHtmlConf: () => parseHtmlConf2
 });
 function normalizeIndex(value) {
-  const num = Number.parseInt(value ?? "", 10);
-  if (!Number.isFinite(num) || num < 1) {
-    return 1;
-  }
-  return num;
+  let num = Number.parseInt(value ?? "", 10);
+  return !Number.isFinite(num) || num < 1 ? 1 : num;
 }
 function parseHtml2(elem, _children, _editor) {
   return {
@@ -99,14 +79,11 @@ __export(elem_to_html_exports2, {
   insertAnswerBoxToHtmlConf: () => insertAnswerBoxToHtmlConf
 });
 function normalizeIndex2(value) {
-  const num = Number.parseInt(String(value ?? ""), 10);
-  if (!Number.isFinite(num) || num < 1) {
-    return 1;
-  }
-  return num;
+  let num = Number.parseInt(String(value ?? ""), 10);
+  return !Number.isFinite(num) || num < 1 ? 1 : num;
 }
 function insertAnswerBoxToHtml(elemNode) {
-  const { index } = elemNode;
+  let { index } = elemNode;
   return `<answer-box index="${normalizeIndex2(index)}"></answer-box>`;
 }
 var insertAnswerBoxToHtmlConf = {
@@ -117,50 +94,21 @@ var insertAnswerBoxToHtmlConf = {
 // ../../jcjy/sd-pc-front/src/components-base/editor-v3/module/insert-answer-box/plugin.ts
 import { DomEditor as DomEditor2, SlateTransforms as SlateTransforms2 } from "@wangeditor-next/editor";
 function removeSelectedAnswerBox(editor) {
-  const selectedElem = DomEditor2.getSelectedElems(editor).find((elem) => {
-    return DomEditor2.getNodeType(elem) === "insert-answer-box";
-  });
-  if (!selectedElem) {
-    return false;
-  }
-  const path = DomEditor2.findPath(editor, selectedElem);
-  SlateTransforms2.removeNodes(editor, { at: path });
-  return true;
+  let selectedElem = DomEditor2.getSelectedElems(editor).find((elem) => DomEditor2.getNodeType(elem) === "insert-answer-box");
+  if (!selectedElem)
+    return !1;
+  let path = DomEditor2.findPath(editor, selectedElem);
+  return SlateTransforms2.removeNodes(editor, { at: path }), !0;
 }
 function withInsertAnswerBox(editor) {
-  const { isVoid, normalizeNode, deleteBackward, deleteForward } = editor;
-  const newEditor = editor;
-  newEditor.isVoid = (elem) => {
-    if (elem.type === "insert-answer-box") {
-      return true;
-    }
-    return isVoid(elem);
-  };
-  newEditor.normalizeNode = ([node, path]) => {
-    const type = DomEditor2.getNodeType(node);
-    if (type === "insert-answer-box") {
-      const isLast = DomEditor2.isLastNode(newEditor, node);
-      if (isLast) {
-        SlateTransforms2.insertNodes(newEditor, DomEditor2.genEmptyParagraph(), {
-          at: [path[0] + 1]
-        });
-      }
-    }
-    return normalizeNode([node, path]);
-  };
-  newEditor.deleteBackward = (...args) => {
-    if (removeSelectedAnswerBox(newEditor)) {
-      return;
-    }
-    deleteBackward.apply(newEditor, args);
-  };
-  newEditor.deleteForward = (...args) => {
-    if (removeSelectedAnswerBox(newEditor)) {
-      return;
-    }
-    deleteForward.apply(newEditor, args);
-  };
-  return newEditor;
+  let { isVoid, normalizeNode, deleteBackward, deleteForward } = editor, newEditor = editor;
+  return newEditor.isVoid = (elem) => elem.type === "insert-answer-box" ? !0 : isVoid(elem), newEditor.normalizeNode = ([node, path]) => (DomEditor2.getNodeType(node) === "insert-answer-box" && DomEditor2.isLastNode(newEditor, node) && SlateTransforms2.insertNodes(newEditor, DomEditor2.genEmptyParagraph(), {
+    at: [path[0] + 1]
+  }), normalizeNode([node, path])), newEditor.deleteBackward = (...args) => {
+    removeSelectedAnswerBox(newEditor) || deleteBackward.apply(newEditor, args);
+  }, newEditor.deleteForward = (...args) => {
+    removeSelectedAnswerBox(newEditor) || deleteForward.apply(newEditor, args);
+  }, newEditor;
 }
 var plugin_default2 = withInsertAnswerBox;
 
@@ -170,10 +118,9 @@ __export(parse_elem_html_exports3, {
   parseHtmlConf: () => parseHtmlConf3
 });
 function parseHtml3(elem, _children, _editor) {
-  const objectId = elem.getAttribute("object-id") || elem.querySelector("proxy-browser")?.getAttribute("object-id") || "";
   return {
     type: "proxyBrowser",
-    objectId,
+    objectId: elem.getAttribute("object-id") || elem.querySelector("proxy-browser")?.getAttribute("object-id") || "",
     children: [{ text: "" }]
   };
 }
@@ -188,9 +135,8 @@ __export(elem_to_html_exports3, {
   proxyBrowserToHtmlConf: () => proxyBrowserToHtmlConf
 });
 function proxyBrowserToHtml(elemNode) {
-  const { objectId } = elemNode;
-  const res = `<div data-w-e-type="proxyBrowser" style="margin:8px 0;"><proxy-browser object-id="${objectId}"></proxy-browser></div>`;
-  return res;
+  let { objectId } = elemNode;
+  return `<div data-w-e-type="proxyBrowser" style="margin:8px 0;"><proxy-browser object-id="${objectId}"></proxy-browser></div>`;
 }
 var proxyBrowserToHtmlConf = {
   type: "proxyBrowser",
@@ -200,28 +146,13 @@ var proxyBrowserToHtmlConf = {
 // ../../jcjy/sd-pc-front/src/components-base/editor-v3/module/proxy-browser/plugin.ts
 import { DomEditor as DomEditor3, SlateTransforms as SlateTransforms3 } from "@wangeditor-next/editor";
 function withProxyBrowser(editor) {
-  const { isVoid, normalizeNode } = editor;
-  const newEditor = editor;
-  newEditor.isVoid = (elem) => {
-    const { type } = elem;
-    if (type === "proxyBrowser") {
-      return true;
-    }
-    return isVoid(elem);
-  };
-  newEditor.normalizeNode = ([node, path]) => {
-    const type = DomEditor3.getNodeType(node);
-    if (type === "proxyBrowser") {
-      const isLast = DomEditor3.isLastNode(newEditor, node);
-      if (isLast) {
-        SlateTransforms3.insertNodes(newEditor, DomEditor3.genEmptyParagraph(), {
-          at: [path[0] + 1]
-        });
-      }
-    }
-    return normalizeNode([node, path]);
-  };
-  return newEditor;
+  let { isVoid, normalizeNode } = editor, newEditor = editor;
+  return newEditor.isVoid = (elem) => {
+    let { type } = elem;
+    return type === "proxyBrowser" ? !0 : isVoid(elem);
+  }, newEditor.normalizeNode = ([node, path]) => (DomEditor3.getNodeType(node) === "proxyBrowser" && DomEditor3.isLastNode(newEditor, node) && SlateTransforms3.insertNodes(newEditor, DomEditor3.genEmptyParagraph(), {
+    at: [path[0] + 1]
+  }), normalizeNode([node, path])), newEditor;
 }
 var plugin_default3 = withProxyBrowser;
 
@@ -231,37 +162,26 @@ __export(parse_elem_html_exports4, {
   parseHtmlConf: () => parseHtmlConf4
 });
 function styleStringToObject(str) {
-  const obj = {};
-  str.split(";").forEach((item) => {
-    const [key, value] = item.split(":").map((s) => s.trim());
-    if (key && value !== void 0) {
-      obj[key] = value;
-    }
-  });
-  return obj;
+  let obj = {};
+  return str.split(";").forEach((item) => {
+    let [key, value] = item.split(":").map((s) => s.trim());
+    key && value !== void 0 && (obj[key] = value);
+  }), obj;
 }
 var parseHtmlConf4 = {
   selector: 'div[data-w-e-type="shadow-dom"]',
   parseElemHtml: (elem, _children, _editor) => {
-    const childEls = elem.children;
-    const doms = [];
-    console.log("parse", elem);
-    Array.from(childEls).forEach((t) => {
-      const attrs = {};
+    let childEls = elem.children, doms = [];
+    return Array.from(childEls).forEach((t) => {
+      let attrs = {};
       Array.from(t.attributes).forEach((tt) => {
-        if (tt.name === "style") {
-          attrs[tt.name] = styleStringToObject(tt.value);
-        } else {
-          attrs[tt.name] = tt.value;
-        }
-      });
-      doms.push({
+        tt.name === "style" ? attrs[tt.name] = styleStringToObject(tt.value) : attrs[tt.name] = tt.value;
+      }), doms.push({
         tag: t.tagName.toLocaleLowerCase(),
         attrs,
         html: t.innerHTML
       });
-    });
-    return {
+    }), {
       type: "shadow-dom",
       doms,
       children: [
@@ -281,33 +201,23 @@ __export(elem_to_html_exports4, {
 var shadowDomToHtmlConf = {
   type: "shadow-dom",
   elemToHtml: (elemNode) => {
-    console.log("elem-to-html", elemNode);
-    const { doms } = elemNode;
-    const children = doms.map((t) => {
-      const { tag, attrs, html } = t;
-      let attr = "";
-      for (const key in attrs) {
+    let { doms } = elemNode;
+    return `<div data-w-e-type="shadow-dom">${doms.map((t) => {
+      let { tag, attrs, html } = t, attr = "";
+      for (let key in attrs)
         attr += `${key}="${attrs[key]}"`;
-      }
       return `<${tag} ${attr}>${html}</${tag}>`;
-    });
-    const res = `<div data-w-e-type="shadow-dom">${children.join("")}</div>`;
-    return res;
+    }).join("")}</div>`;
   }
 };
 
 // ../../jcjy/sd-pc-front/src/components-base/editor-v3/module/shadow-dom/plugin.ts
 function withShadowDom(editor) {
-  const { isVoid } = editor;
-  const newEditor = editor;
-  newEditor.isVoid = (elem) => {
-    const { type } = elem;
-    if (type === "shadow-dom") {
-      return false;
-    }
-    return isVoid(elem);
-  };
-  return newEditor;
+  let { isVoid } = editor, newEditor = editor;
+  return newEditor.isVoid = (elem) => {
+    let { type } = elem;
+    return type === "shadow-dom" ? !1 : isVoid(elem);
+  }, newEditor;
 }
 var plugin_default4 = withShadowDom;
 
@@ -341,20 +251,12 @@ var TEXT_PARSE_TYPES = [
 // ../../jcjy/sd-pc-front/src/components-base/editor-v3/module/text-parse/parse-elem-html.ts
 function genParser(type) {
   return (elem, children, editor) => {
-    let nextChildren = children.filter((child) => {
-      if (SlateText.isText(child)) {
-        return true;
+    let nextChildren = children.filter((child) => SlateText.isText(child) ? !0 : editor.isInline(child));
+    return nextChildren.length === 0 && (nextChildren = [
+      {
+        text: (elem.textContent ?? "").replace(/\s+/g, " ").trim()
       }
-      return editor.isInline(child);
-    });
-    if (nextChildren.length === 0) {
-      nextChildren = [
-        {
-          text: (elem.textContent ?? "").replace(/\s+/g, " ").trim()
-        }
-      ];
-    }
-    return {
+    ]), {
       type,
       children: nextChildren
     };
@@ -371,9 +273,7 @@ __export(elem_to_html_exports5, {
   textParseToHtmlConfs: () => textParseToHtmlConfs
 });
 function genToHtmlFn(type) {
-  return (_elemNode, childrenHtml) => {
-    return `<div data-w-e-type="${type}">${childrenHtml}</div>`;
-  };
+  return (_elemNode, childrenHtml) => `<div data-w-e-type="${type}">${childrenHtml}</div>`;
 }
 var textParseToHtmlConfs = TEXT_PARSE_TYPES.map((type) => ({
   type,
@@ -390,39 +290,34 @@ import {
   SlateText as SlateText2,
   SlateTransforms as SlateTransforms4
 } from "@wangeditor-next/editor";
-var HEADER_TYPES = ["header1", "header2", "header3", "header4", "header5", "header6"];
-var TEXT_PARSE_TYPE_SET = new Set(TEXT_PARSE_TYPES);
-var HEADER_TYPE_SET = new Set(HEADER_TYPES);
+var HEADER_TYPES = ["header1", "header2", "header3", "header4", "header5", "header6"], TEXT_PARSE_TYPE_SET = new Set(TEXT_PARSE_TYPES), HEADER_TYPE_SET = new Set(HEADER_TYPES);
 function isTextParseType(type) {
   return TEXT_PARSE_TYPE_SET.has(type);
 }
 
 // ../../jcjy/sd-pc-front/src/components-base/editor-v3/module/text-parse/plugin.ts
 function withTextParse(editor) {
-  const { insertBreak } = editor;
-  const newEditor = editor;
-  newEditor.insertBreak = () => {
-    const [match] = SlateEditor2.nodes(newEditor, {
+  let { insertBreak } = editor, newEditor = editor;
+  return newEditor.insertBreak = () => {
+    let [match] = SlateEditor2.nodes(newEditor, {
       match: (node) => {
-        const type = DomEditor5.getNodeType(node);
+        let type = DomEditor5.getNodeType(node);
         return isTextParseType(type);
       },
-      universal: true
+      universal: !0
     });
     if (!match) {
       insertBreak();
       return;
     }
-    const isAtLineEnd = DomEditor5.isSelectionAtLineEnd(newEditor, match[1]);
-    if (isAtLineEnd) {
+    if (DomEditor5.isSelectionAtLineEnd(newEditor, match[1])) {
       SlateTransforms5.insertNodes(newEditor, DomEditor5.genEmptyParagraph(), {
         mode: "highest"
       });
       return;
     }
     insertBreak();
-  };
-  return newEditor;
+  }, newEditor;
 }
 var plugin_default5 = withTextParse;
 
@@ -435,61 +330,32 @@ import { getTextStyleMode } from "@wangeditor-next/editor";
 
 // ../../jcjy/sd-pc-front/src/components-base/editor-v3/module/video/utils/dom.ts
 function appendVideoRatioStyle(styleStr, style) {
-  const videoRatio = style["--video-ratio"];
-  if (!videoRatio) {
-    return styleStr;
-  }
-  return `${styleStr}--video-ratio: ${videoRatio};`;
+  let videoRatio = style["--video-ratio"];
+  return videoRatio ? `${styleStr}--video-ratio: ${videoRatio};` : styleStr;
 }
-function genSizeStyledIframeHtml(iframeHtml, width = "auto", height = "auto", style = {}, classMode = false) {
-  const doc = new DOMParser().parseFromString(iframeHtml, "text/html");
-  const iframe = doc.querySelector("iframe");
-  if (!iframe) {
+function genSizeStyledIframeHtml(iframeHtml, width = "auto", height = "auto", style = {}, classMode = !1) {
+  let iframe = new DOMParser().parseFromString(iframeHtml, "text/html").querySelector("iframe");
+  if (!iframe)
     return iframeHtml;
-  }
-  const { width: styleWidth = "", height: styleHeight = "" } = style;
-  iframe.setAttribute("width", width);
-  iframe.setAttribute("height", height);
-  if (!classMode) {
+  let { width: styleWidth = "", height: styleHeight = "" } = style;
+  if (iframe.setAttribute("width", width), iframe.setAttribute("height", height), classMode)
+    styleWidth && iframe.setAttribute("data-w-e-style-width", styleWidth), styleHeight && iframe.setAttribute("data-w-e-style-height", styleHeight), iframe.removeAttribute("style"), style["--video-ratio"] && iframe.setAttribute("style", appendVideoRatioStyle("", style));
+  else {
     let styleStr = "";
-    if (styleWidth) {
-      styleStr += `width: ${styleWidth};`;
-    }
-    if (styleHeight) {
-      styleStr += `height: ${styleHeight};`;
-    }
-    iframe.setAttribute("style", appendVideoRatioStyle(styleStr, style));
-  } else {
-    if (styleWidth) {
-      iframe.setAttribute("data-w-e-style-width", styleWidth);
-    }
-    if (styleHeight) {
-      iframe.setAttribute("data-w-e-style-height", styleHeight);
-    }
-    iframe.removeAttribute("style");
-    if (style["--video-ratio"]) {
-      iframe.setAttribute("style", appendVideoRatioStyle("", style));
-    }
+    styleWidth && (styleStr += `width: ${styleWidth};`), styleHeight && (styleStr += `height: ${styleHeight};`), iframe.setAttribute("style", appendVideoRatioStyle(styleStr, style));
   }
   return iframe.outerHTML;
 }
-function genVideoStyle(style = {}, classMode = false) {
-  const { width = "", height = "" } = style;
-  if (classMode) {
+function genVideoStyle(style = {}, classMode = !1) {
+  let { width = "", height = "" } = style;
+  if (classMode)
     return {
       styleAttr: style["--video-ratio"] ? ` style="${appendVideoRatioStyle("", style)}"` : "",
       widthData: width ? ` data-w-e-style-width="${width}"` : "",
       heightData: height ? ` data-w-e-style-height="${height}"` : ""
     };
-  }
   let styleStr = "";
-  if (width) {
-    styleStr += `width: ${width};`;
-  }
-  if (height) {
-    styleStr += `height: ${height};`;
-  }
-  return {
+  return width && (styleStr += `width: ${width};`), height && (styleStr += `height: ${height};`), {
     styleAttr: ` style="${appendVideoRatioStyle(styleStr, style)}"`,
     widthData: "",
     heightData: ""
@@ -498,39 +364,28 @@ function genVideoStyle(style = {}, classMode = false) {
 
 // ../../jcjy/sd-pc-front/src/components-base/editor-v3/module/video/elem-to-html.ts
 function getVideoAlignClass(textAlign) {
-  const align = (textAlign || "").trim().toLowerCase();
-  if (!align) {
-    return "w-e-video-align-center";
-  }
-  if (["left", "center", "right", "justify"].includes(align)) {
-    return `w-e-video-align-${align}`;
-  }
-  return "w-e-video-align-center";
+  let align = (textAlign || "").trim().toLowerCase();
+  return align && ["left", "center", "right", "justify"].includes(align) ? `w-e-video-align-${align}` : "w-e-video-align-center";
 }
 function videoToHtml(elemNode, _childrenHtml, editor) {
-  const {
+  let {
     src = "",
     poster = "",
     width = "auto",
     height = "auto",
     style = {},
     textAlign = "center"
-  } = elemNode;
-  const mode = getTextStyleMode(editor);
-  const containerAlign = textAlign || "center";
-  const alignData = ` data-w-e-text-align="${containerAlign}"`;
-  const containerAttrs = mode === "class" ? ` class="${getVideoAlignClass(containerAlign)}"${alignData}` : ` style="text-align: ${containerAlign};"`;
-  let res = `<div data-w-e-type="video" data-w-e-is-void${containerAttrs}>
+  } = elemNode, mode = getTextStyleMode(editor), containerAlign = textAlign || "center", alignData = ` data-w-e-text-align="${containerAlign}"`, res = `<div data-w-e-type="video" data-w-e-is-void${mode === "class" ? ` class="${getVideoAlignClass(containerAlign)}"${alignData}` : ` style="text-align: ${containerAlign};"`}>
 `;
   if (src.trim().indexOf("<iframe ") === 0) {
-    const iframeHtml = genSizeStyledIframeHtml(src, width, height, style, mode === "class");
+    let iframeHtml = genSizeStyledIframeHtml(src, width, height, style, mode === "class");
     res += iframeHtml;
   } else {
-    const { styleAttr, widthData, heightData } = genVideoStyle(style, mode === "class");
+    let { styleAttr, widthData, heightData } = genVideoStyle(style, mode === "class");
     res += `<video poster="${poster}" controls="true" width="${width}" height="${height}"${widthData}${heightData}${styleAttr}><source src="${src}" type="video/mp4"/></video>`;
   }
-  res += "\n</div>";
-  return res;
+  return res += `
+</div>`, res;
 }
 var videoToHtmlConf = {
   type: "video",
@@ -538,36 +393,25 @@ var videoToHtmlConf = {
 };
 
 // editor-v3-modules.generated.ts
-var isParseConf = (v) => !!v && typeof v === "object" && typeof v.selector === "string" && typeof v.parseElemHtml === "function";
-var isToHtmlConf = (v) => !!v && typeof v === "object" && typeof v.type === "string" && typeof v.elemToHtml === "function";
+var isParseConf = (v) => !!v && typeof v == "object" && typeof v.selector == "string" && typeof v.parseElemHtml == "function", isToHtmlConf = (v) => !!v && typeof v == "object" && typeof v.type == "string" && typeof v.elemToHtml == "function";
 function collect(ns, test) {
-  const out = [];
-  for (const value of Object.values(ns ?? {})) {
-    if (Array.isArray(value)) {
-      for (const item of value) if (test(item)) out.push(item);
-    } else if (test(value)) {
-      out.push(value);
-    }
-  }
+  let out = [];
+  for (let value of Object.values(ns ?? {}))
+    if (Array.isArray(value))
+      for (let item of value) test(item) && out.push(item);
+    else test(value) && out.push(value);
   return out;
 }
 function composePlugins(plugins) {
-  if (plugins.length === 0) return void 0;
-  return (editor) => plugins.reduce((acc, plugin) => plugin(acc), editor);
+  if (plugins.length !== 0)
+    return (editor) => plugins.reduce((acc, plugin) => plugin(acc), editor);
 }
-var editorV3NodeModules = [];
-var allParse = [];
-var allToHtml = [];
-var allSelectors = [];
-var allTypes = [];
+var editorV3NodeModules = [], allParse = [], allToHtml = [], allSelectors = [], allTypes = [];
 {
-  const parse = collect(parse_elem_html_exports, isParseConf);
-  const toHtml = collect(elem_to_html_exports, isToHtmlConf);
-  const plugins = [plugin_default].filter((p) => typeof p === "function");
-  allParse.push(...parse);
-  allToHtml.push(...toHtml);
-  for (const conf of parse) allSelectors.push(conf.selector);
-  for (const conf of toHtml) allTypes.push(conf.type);
+  let parse = collect(parse_elem_html_exports, isParseConf), toHtml = collect(elem_to_html_exports, isToHtmlConf), plugins = [plugin_default].filter((p) => typeof p == "function");
+  allParse.push(...parse), allToHtml.push(...toHtml);
+  for (let conf of parse) allSelectors.push(conf.selector);
+  for (let conf of toHtml) allTypes.push(conf.type);
   editorV3NodeModules.push({
     parseElemsHtml: parse,
     elemsToHtml: toHtml,
@@ -575,13 +419,10 @@ var allTypes = [];
   });
 }
 {
-  const parse = collect(parse_elem_html_exports2, isParseConf);
-  const toHtml = collect(elem_to_html_exports2, isToHtmlConf);
-  const plugins = [plugin_default2].filter((p) => typeof p === "function");
-  allParse.push(...parse);
-  allToHtml.push(...toHtml);
-  for (const conf of parse) allSelectors.push(conf.selector);
-  for (const conf of toHtml) allTypes.push(conf.type);
+  let parse = collect(parse_elem_html_exports2, isParseConf), toHtml = collect(elem_to_html_exports2, isToHtmlConf), plugins = [plugin_default2].filter((p) => typeof p == "function");
+  allParse.push(...parse), allToHtml.push(...toHtml);
+  for (let conf of parse) allSelectors.push(conf.selector);
+  for (let conf of toHtml) allTypes.push(conf.type);
   editorV3NodeModules.push({
     parseElemsHtml: parse,
     elemsToHtml: toHtml,
@@ -589,13 +430,10 @@ var allTypes = [];
   });
 }
 {
-  const parse = collect(parse_elem_html_exports3, isParseConf);
-  const toHtml = collect(elem_to_html_exports3, isToHtmlConf);
-  const plugins = [plugin_default3].filter((p) => typeof p === "function");
-  allParse.push(...parse);
-  allToHtml.push(...toHtml);
-  for (const conf of parse) allSelectors.push(conf.selector);
-  for (const conf of toHtml) allTypes.push(conf.type);
+  let parse = collect(parse_elem_html_exports3, isParseConf), toHtml = collect(elem_to_html_exports3, isToHtmlConf), plugins = [plugin_default3].filter((p) => typeof p == "function");
+  allParse.push(...parse), allToHtml.push(...toHtml);
+  for (let conf of parse) allSelectors.push(conf.selector);
+  for (let conf of toHtml) allTypes.push(conf.type);
   editorV3NodeModules.push({
     parseElemsHtml: parse,
     elemsToHtml: toHtml,
@@ -603,13 +441,10 @@ var allTypes = [];
   });
 }
 {
-  const parse = collect(parse_elem_html_exports4, isParseConf);
-  const toHtml = collect(elem_to_html_exports4, isToHtmlConf);
-  const plugins = [plugin_default4].filter((p) => typeof p === "function");
-  allParse.push(...parse);
-  allToHtml.push(...toHtml);
-  for (const conf of parse) allSelectors.push(conf.selector);
-  for (const conf of toHtml) allTypes.push(conf.type);
+  let parse = collect(parse_elem_html_exports4, isParseConf), toHtml = collect(elem_to_html_exports4, isToHtmlConf), plugins = [plugin_default4].filter((p) => typeof p == "function");
+  allParse.push(...parse), allToHtml.push(...toHtml);
+  for (let conf of parse) allSelectors.push(conf.selector);
+  for (let conf of toHtml) allTypes.push(conf.type);
   editorV3NodeModules.push({
     parseElemsHtml: parse,
     elemsToHtml: toHtml,
@@ -617,13 +452,10 @@ var allTypes = [];
   });
 }
 {
-  const parse = collect(parse_elem_html_exports5, isParseConf);
-  const toHtml = collect(elem_to_html_exports5, isToHtmlConf);
-  const plugins = [plugin_default5].filter((p) => typeof p === "function");
-  allParse.push(...parse);
-  allToHtml.push(...toHtml);
-  for (const conf of parse) allSelectors.push(conf.selector);
-  for (const conf of toHtml) allTypes.push(conf.type);
+  let parse = collect(parse_elem_html_exports5, isParseConf), toHtml = collect(elem_to_html_exports5, isToHtmlConf), plugins = [plugin_default5].filter((p) => typeof p == "function");
+  allParse.push(...parse), allToHtml.push(...toHtml);
+  for (let conf of parse) allSelectors.push(conf.selector);
+  for (let conf of toHtml) allTypes.push(conf.type);
   editorV3NodeModules.push({
     parseElemsHtml: parse,
     elemsToHtml: toHtml,
@@ -631,23 +463,17 @@ var allTypes = [];
   });
 }
 {
-  const parse = [];
-  const toHtml = collect(elem_to_html_exports6, isToHtmlConf);
-  const plugins = [];
-  allParse.push(...parse);
-  allToHtml.push(...toHtml);
-  for (const conf of parse) allSelectors.push(conf.selector);
-  for (const conf of toHtml) allTypes.push(conf.type);
+  let parse = [], toHtml = collect(elem_to_html_exports6, isToHtmlConf), plugins = [];
+  allParse.push(...parse), allToHtml.push(...toHtml);
+  for (let conf of parse) allSelectors.push(conf.selector);
+  for (let conf of toHtml) allTypes.push(conf.type);
   editorV3NodeModules.push({
     parseElemsHtml: parse,
     elemsToHtml: toHtml,
     editorPlugin: composePlugins(plugins)
   });
 }
-var EDITOR_V3_CUSTOM_TYPES = [...new Set(allTypes)].sort();
-var EDITOR_V3_PARSE_SELECTORS = [...new Set(allSelectors)].sort();
-var EDITOR_V3_SOURCE = "/Users/mac/Documents/code/jcjy/sd-pc-front/src/components-base/editor-v3";
-var EDITOR_V3_SUMMARY = {
+var EDITOR_V3_CUSTOM_TYPES = [...new Set(allTypes)].sort(), EDITOR_V3_PARSE_SELECTORS = [...new Set(allSelectors)].sort(), EDITOR_V3_SOURCE = "/Users/mac/Documents/code/jcjy/sd-pc-front/src/components-base/editor-v3", EDITOR_V3_SUMMARY = {
   modules: editorV3NodeModules.length,
   parseConfs: allParse.length,
   toHtmlConfs: allToHtml.length,

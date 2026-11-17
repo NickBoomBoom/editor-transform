@@ -60,6 +60,7 @@ export type WarningCode =
   | 'CONTENT_LOSS'
   | 'UNKNOWN_TAG'
   | 'EMPTY_RESULT'
+  | 'BUILTIN_MODULES_UNAVAILABLE'
 
 export interface TransformWarning {
   code: WarningCode

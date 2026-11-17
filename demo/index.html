@@ -217,39 +217,17 @@
     </script>
 
     <script type="module">
-      import { htmlToSlate, registerModule, slateToHtml } from 'editor-transform'
+      import { htmlToSlate, registerModule, shadowDomSerializerRepair, slateToHtml } from 'editor-transform'
       // 由 scripts/sync-editor-v3.ts 生成：editor-v3 的解析/序列化/插件规则。
-      // 必须注册，否则 audio / answer-box / shadow-dom / textParse* 会静默退化成 paragraph。
+      // 浏览器入口不自动注册（Node 入口才会），所以这里手动装，否则
+      // audio / answer-box / shadow-dom / textParse* 会静默退化成 paragraph。
       import { editorV3NodeModules } from '/demo/vendor/editor-v3-modules.js'
 
       for (const mod of editorV3NodeModules) registerModule(mod)
 
       // editor-v3 的 shadow-dom 序列化会把 attrs.style 写成 [object Object]，属性之间
-      // 也没有空格。按 README「修上游 elemToHtml 的缺陷」注册同 type 的规则覆盖它。
-      registerModule({
-        elemsToHtml: [
-          {
-            type: 'shadow-dom',
-            elemToHtml(elem) {
-              const doms = Array.isArray(elem.doms) ? elem.doms : []
-              const inner = doms
-                .map((dom) => {
-                  const attrs = Object.entries(dom.attrs ?? {})
-                    .map(([key, raw]) => {
-                      const value = raw && typeof raw === 'object'
-                        ? Object.entries(raw).map(([prop, v]) => `${prop}: ${v}`).join('; ')
-                        : String(raw)
-                      return ` ${key}="${value}"`
-                    })
-                    .join('')
-                  return `<${dom.tag}${attrs}>${dom.html}</${dom.tag}>`
-                })
-                .join('')
-              return `<div data-w-e-type="shadow-dom">${inner}</div>`
-            },
-          },
-        ],
-      })
+      // 也没有空格。SDK 内置了这条覆盖规则（Node 入口自动装），浏览器侧手动注册即可。
+      registerModule(shadowDomSerializerRepair)
 
       const $ = (id) => document.getElementById(id)
       const inputHtml = $('input-html')

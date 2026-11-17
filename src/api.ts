@@ -52,6 +52,11 @@ function getEngine(kind: 'internal' | 'public'): Engine | null {
   if (existing) return existing
   if (!factory) return null
 
+  // Built-in modules have to be in `pendingModules` before the engine exists:
+  // `Boot.registerModule` installs a module's `editorPlugin` while an editor is
+  // being constructed, so a rule registered afterwards never applies.
+  resolveBuiltinModules()
+
   const engine = factory(kind)
   if (!engine) return null
 
@@ -97,6 +102,97 @@ function registerOn(engine: Engine, mod: unknown): boolean {
   seen.add(mod)
   register(mod)
   return true
+}
+
+/** Install `mod` on the engines that already exist. Returns true if any took it. */
+function installOnExisting(mod: unknown): boolean {
+  let installedAnywhere = false
+  for (const existing of engines.values()) {
+    if (registerOn(existing, mod)) installedAnywhere = true
+  }
+
+  // Only a pooled editor that already exists can be stale.
+  if (installedAnywhere) {
+    for (const existing of engines.values()) existing.reset?.()
+  }
+  return installedAnywhere
+}
+
+/** Produces the module set installed on every engine, without being asked to. */
+export type BuiltinModulesProvider = () => readonly unknown[]
+
+let builtinProvider: BuiltinModulesProvider | null = null
+let builtinsEnabled = true
+let builtinsResolved = false
+
+/**
+ * Register the provider of the built-in modules. Called by the entry points,
+ * which are the only place that knows how to find the bundled editor-v3 modules;
+ * pass `null` to opt out entirely (an embedding host with its own module set).
+ */
+export function setBuiltinModulesProvider(provider: BuiltinModulesProvider | null): void {
+  builtinProvider = provider
+  builtinsResolved = false
+}
+
+/**
+ * Report a problem with the built-in module set. Exposed for the entry points,
+ * which are the only place that can tell *why* the modules are missing.
+ */
+export function reportBuiltinModulesWarning(message: string): void {
+  emit('BUILTIN_MODULES_UNAVAILABLE', message)
+}
+
+/**
+ * Queue the built-in modules for the first engine build.
+ *
+ * Deliberately lazy: doing it at import time would load wangEditor (and, for the
+ * `internal` engine, patch the bundle) before the caller converts anything, and
+ * the rules are only needed once an engine exists.
+ *
+ * Entries are *re-appended* rather than skipped when already queued, so the
+ * provider's order always holds: the `shadow-dom` repair must be registered
+ * after the bundled rule it overrides, even if the caller installed one of these
+ * objects by hand before the first conversion.
+ */
+function resolveBuiltinModules(): void {
+  if (builtinsResolved) return
+  builtinsResolved = true
+  if (!builtinsEnabled || !builtinProvider) return
+
+  for (const mod of builtinProvider()) {
+    const queued = pendingModules.indexOf(mod)
+    if (queued >= 0) pendingModules.splice(queued, 1)
+    pendingModules.push(mod)
+  }
+}
+
+/**
+ * Stop installing the built-in modules, for callers that want the bare
+ * wangEditor behaviour. Must be called before the first conversion: wangEditor's
+ * registry can only be added to, so modules that are already installed stay
+ * installed (drop the pooled editor with {@link disposeEngines} to start over).
+ */
+export function disableBuiltinModules(): void {
+  builtinsEnabled = false
+  builtinsResolved = true
+}
+
+/**
+ * Install the built-in modules and return the set that was installed. Useful for
+ * a health check that wants to show the difference they make, since
+ * {@link disableBuiltinModules} has to be called before the first conversion.
+ */
+export function enableBuiltinModules(): readonly unknown[] {
+  builtinsEnabled = true
+  builtinsResolved = true
+
+  const modules = builtinProvider ? [...builtinProvider()] : []
+  for (const mod of modules) {
+    if (!pendingModules.includes(mod)) pendingModules.push(mod)
+    installOnExisting(mod)
+  }
+  return modules
 }
 
 function resolveEngine(mode: EngineMode): Engine {
@@ -229,7 +325,9 @@ export function getEditorApi(mode: EngineMode = 'auto'): EditorModule | undefine
 /**
  * Register a custom wangEditor module on every instance the engine may use.
  *
- * This is the only supported way to install custom node types: the `internal`
+ * The modules the package ships (the editor-v3 node types and the `shadow-dom`
+ * serializer repair) are installed automatically, so this is for *additional*
+ * rules. It is still the only supported way to install them: the `internal`
  * engine parses with a patched *copy* of the bundle, so a module registered
  * through a direct `import { Boot } from '@wangeditor-next/editor'` lands on a
  * different instance and is silently ignored. For the same reason the module is
@@ -249,16 +347,7 @@ export function registerModule(mod: unknown, mode: EngineMode = 'auto'): void {
   }
 
   if (!pendingModules.includes(mod)) pendingModules.push(mod)
-
-  let installedAnywhere = false
-  for (const existing of engines.values()) {
-    if (registerOn(existing, mod)) installedAnywhere = true
-  }
-
-  // Only a pooled editor that already exists can be stale.
-  if (installedAnywhere) {
-    for (const existing of engines.values()) existing.reset?.()
-  }
+  installOnExisting(mod)
 }
 
 /**

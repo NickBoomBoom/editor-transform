@@ -6,5 +6,8 @@ dist/
 .npm-cache/
 .pnpm-store/
 
+# npm 认证信息（沙箱下 HOME 不可写，登录态落在仓库内，绝不入库）
+.npmrc
+
 .DS_Store
 *.log
